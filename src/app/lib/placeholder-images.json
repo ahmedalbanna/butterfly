@@ -1,0 +1,59 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "jewelry-1",
+      "description": "Rose Gold Diamond Necklace",
+      "imageUrl": "https://picsum.photos/seed/lux1/800/800",
+      "imageHint": "diamond necklace"
+    },
+    {
+      "id": "jewelry-2",
+      "description": "Minimalist Gold Hoop Earrings",
+      "imageUrl": "https://picsum.photos/seed/lux2/800/800",
+      "imageHint": "gold earrings"
+    },
+    {
+      "id": "jewelry-3",
+      "description": "Classic Pearl Bracelet",
+      "imageUrl": "https://picsum.photos/seed/lux3/800/800",
+      "imageHint": "pearl bracelet"
+    },
+    {
+      "id": "watch-1",
+      "description": "Elegant Rose Gold Watch",
+      "imageUrl": "https://picsum.photos/seed/lux4/800/800",
+      "imageHint": "luxury watch"
+    },
+    {
+      "id": "bag-1",
+      "description": "Sleek Leather Clutch",
+      "imageUrl": "https://picsum.photos/seed/lux5/800/800",
+      "imageHint": "leather clutch"
+    },
+    {
+      "id": "sunglasses-1",
+      "description": "Designer Tortoise Sunglasses",
+      "imageUrl": "https://picsum.photos/seed/lux6/800/800",
+      "imageHint": "fashion sunglasses"
+    },
+    {
+      "id": "scarf-1",
+      "description": "Silk Floral Scarf",
+      "imageUrl": "https://picsum.photos/seed/lux7/800/800",
+      "imageHint": "silk scarf"
+    },
+    {
+      "id": "jewelry-4",
+      "description": "Emerald Cut Engagement Ring",
+      "imageUrl": "https://picsum.photos/seed/lux8/800/800",
+      "imageHint": "diamond ring"
+    },
+    {
+      "id": "hero-image",
+      "description": "Elegant accessory collection on a white backdrop",
+      "imageUrl": "https://picsum.photos/seed/luxhero/1200/800",
+      "imageHint": "luxury jewelry"
+    }
+  ]
+}
