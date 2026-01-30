@@ -1,13 +1,8 @@
 
-"use client"
-
-import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
-import { PRODUCTS } from '@/lib/products';
-import { useCart } from '@/context/cart-context';
+import { getProductPageData } from '@/app/actions/page-data';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
 import { 
   Accordion, 
   AccordionContent, 
@@ -16,13 +11,10 @@ import {
 } from "@/components/ui/accordion";
 import { ChevronRight, ShoppingBag, ShieldCheck, Truck, RefreshCcw } from 'lucide-react';
 import Link from 'next/link';
+import { AddToCartButton } from './add-to-cart-button';
 
-export default function ProductPage() {
-  const { id } = useParams();
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  
-  const product = PRODUCTS.find(p => p.id === id);
+export default async function ProductPage({ params }: { params: { id: string } }) {
+  const { product, relatedProducts } = await getProductPageData(params.id);
 
   if (!product) {
     return (
@@ -30,7 +22,7 @@ export default function ProductPage() {
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           <h1 className="text-3xl font-headline mb-4">Product not found</h1>
-          <Link href="/shop">
+          <Link href="/">
             <Button className="bg-primary text-white">Back to Shop</Button>
           </Link>
         </div>
@@ -38,26 +30,13 @@ export default function ProductPage() {
     );
   }
 
-  const handleAddToCart = () => {
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your bag.`,
-    });
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
       <main className="container mx-auto px-4 py-8 md:py-16">
         <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-secondary mb-8">
-          <Link href="/shop" className="hover:text-primary">Shop</Link>
+          <Link href="/" className="hover:text-primary">Shop</Link>
           <ChevronRight className="w-3 h-3" />
           <span className="text-primary font-bold">{product.category}</span>
         </div>
@@ -95,13 +74,14 @@ export default function ProductPage() {
               {product.description}
             </p>
 
-            <Button 
-              size="lg" 
-              className="w-full h-14 rounded-none bg-primary text-white text-lg font-bold tracking-widest uppercase hover:bg-primary/90"
-              onClick={handleAddToCart}
-            >
-              <ShoppingBag className="mr-2 h-5 w-5" /> Add To Bag
-            </Button>
+            <AddToCartButton 
+              product={{
+                id: product.id,
+                name: product.name,
+                price: product.price,
+                image: product.image
+              }}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-6 border-y">
               <div className="flex flex-col items-center text-center space-y-2">

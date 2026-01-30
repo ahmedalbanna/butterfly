@@ -1,5 +1,6 @@
 
 import { PlaceHolderImages } from './placeholder-images';
+import { getProducts, getProductById, getProductsByCategory } from '@/app/actions/products';
 
 export type Product = {
   id: string;
@@ -12,6 +13,9 @@ export type Product = {
   image: string;
   images: string[];
   featured?: boolean;
+  stock?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export const PRODUCTS: Product[] = [
@@ -134,3 +138,52 @@ export const PRODUCTS: Product[] = [
 ];
 
 export const CATEGORIES = ['All', 'Jewelry', 'Watches', 'Bags', 'Accessories'];
+
+/**
+ * Get all products - fetches from database with fallback to hardcoded data
+ */
+export async function getAllProducts(): Promise<Product[]> {
+  try {
+    const dbProducts = await getProducts();
+    if (dbProducts && dbProducts.length > 0) {
+      return dbProducts;
+    }
+  } catch (error) {
+    console.warn('Database not available, using hardcoded products');
+  }
+  return PRODUCTS;
+}
+
+/**
+ * Get product by ID - fetches from database with fallback to hardcoded data
+ */
+export async function getProduct(id: string): Promise<Product | undefined> {
+  try {
+    const dbProduct = await getProductById(id);
+    if (dbProduct) {
+      return dbProduct;
+    }
+  } catch (error) {
+    console.warn('Database not available, using hardcoded products');
+  }
+  return PRODUCTS.find(p => p.id === id);
+}
+
+/**
+ * Get products by category - fetches from database with fallback to hardcoded data
+ */
+export async function getProductsInCategory(category: string): Promise<Product[]> {
+  try {
+    const dbProducts = await getProductsByCategory(category);
+    if (dbProducts && dbProducts.length > 0) {
+      return dbProducts;
+    }
+  } catch (error) {
+    console.warn('Database not available, using hardcoded products');
+  }
+  
+  if (category === 'All') {
+    return PRODUCTS;
+  }
+  return PRODUCTS.filter(p => p.category === category);
+}

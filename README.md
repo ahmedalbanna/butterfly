@@ -20,6 +20,8 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 
 ## 🚀 Getting Started
 
+### Basic Setup (Without Database)
+
 1. **Setup Environment:** Ensure you have your `GEMINI_API_KEY` in the `.env` file.
 2. **Install Dependencies:**
    ```bash
@@ -30,10 +32,52 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
    npm run dev
    ```
 
+The app will work with hardcoded product data if no database is configured.
+
+### Full Setup (With PostgreSQL Database) - **Recommended**
+
+For full e-commerce functionality including order persistence, cart sync, and chat history:
+
+1. **Start PostgreSQL with Docker:**
+   ```bash
+   docker compose up -d
+   ```
+   
+2. **Setup Database Schema and Seed Data:**
+   ```bash
+   npm run db:generate
+   npm run db:push
+   npm run db:seed
+   ```
+
+3. **Start Development:**
+   ```bash
+   npm run dev
+   ```
+
+**Database Credentials** (already configured in `.env`):
+- User: `luxefinds_admin`
+- Password: `luxefinds_secure_pass_2026`
+- Database: `luxefinds`
+
+See [`DOCKER_DATABASE.md`](./DOCKER_DATABASE.md) for Docker commands and [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for alternative setups.
+
 ## 📂 Project Structure
 
 - `src/app/`: Next.js App Router pages and layouts.
+- `src/app/actions/`: Server actions for database operations.
 - `src/ai/`: Genkit AI flows and configurations.
 - `src/components/`: Reusable UI components (ShadCN + Custom).
 - `src/context/`: Global state management for Cart, Chat, and Voice Calls.
-- `src/lib/`: Product data and utility functions.
+- `src/lib/`: Product data, database client, and utility functions.
+- `prisma/`: Database schema and migrations.
+
+## 🗄️ Database
+
+LuxeFinds uses **PostgreSQL** with **Prisma ORM** for:
+- Product catalog management
+- Order processing and history
+- Shopping cart persistence
+- AI chat history
+
+The app gracefully falls back to hardcoded data if no database is configured. See [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for setup instructions.

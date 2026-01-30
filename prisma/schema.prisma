@@ -1,0 +1,122 @@
+// LuxeFinds E-commerce Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Products
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // Jewelry, Watches, Bags, Accessories
+  price       Float
+  description String   @db.Text
+  materials   String   @db.Text
+  care        String   @db.Text
+  image       String   // Primary image URL
+  images      String[] // Array of image URLs
+  featured    Boolean  @default(false)
+  stock       Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@index([category])
+  @@index([featured])
+}
+
+// Users (prepared for future authentication)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders       Order[]
+  cart         Cart?
+  chatSessions ChatSession[]
+}
+
+// Shopping Cart
+model Cart {
+  id        String     @id @default(cuid())
+  userId    String     @unique
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@index([cartId])
+}
+
+// Orders
+model Order {
+  id              String      @id @default(cuid())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status          String      @default("pending") // pending, confirmed, shipped, delivered, cancelled
+  total           Float
+  shippingAddress String      @db.Text
+  billingAddress  String      @db.Text
+  customerEmail   String
+  customerName    String
+  customerPhone   String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  items OrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  price     Float    // Price at time of purchase
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+}
+
+// AI Stylist Chat History
+model ChatSession {
+  id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId String    @unique // Client-generated session ID
+  messages  Json      // Array of {role, content, timestamp}
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([createdAt])
+}

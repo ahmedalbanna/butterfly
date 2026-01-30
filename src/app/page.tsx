@@ -2,7 +2,8 @@
 "use client"
 
 import Image from 'next/image';
-import { PRODUCTS, CATEGORIES } from '@/lib/products';
+import { CATEGORIES } from '@/lib/products';
+import { getHomePageData, GroupedProducts } from '@/app/actions/page-data';
 import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo, useRef } from 'react';
@@ -69,14 +70,29 @@ export default function Home() {
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
   const [isZoomed, setIsZoomed] = useState<Record<string, boolean>>({});
+  const [groupedProducts, setGroupedProducts] = useState<GroupedProducts[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const groupedProducts = useMemo(() => {
-    return CATEGORIES.filter(cat => cat !== 'All').map(cat => ({
-      name: cat,
-      products: PRODUCTS.filter(p => p.category === cat)
-    })).filter(group => group.products.length > 0);
-  }, []);
+  // Fetch products from database on mount
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await getHomePageData();
+        setGroupedProducts(data);
+      } catch (error) {
+        console.error('Error loading products:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load products. Please refresh the page.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadProducts();
+  }, [toast]);
 
   useEffect(() => {
     const initialIndices: Record<number, number> = {};
@@ -161,6 +177,18 @@ export default function Home() {
       setSparkles(prev => prev.filter(s => s.id !== newSparkle.id));
     }, 1000);
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-black text-white">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="text-sm uppercase tracking-widest text-white/60">Loading Collection...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white box-border">
