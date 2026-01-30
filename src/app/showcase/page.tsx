@@ -1,3 +1,4 @@
+
 "use client"
 
 import Image from 'next/image';
@@ -22,35 +23,12 @@ export default function ShowcasePage() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-  const [cursorText, setCursorText] = useState("");
-  const [isDesktop, setIsDesktop] = useState(false);
 
   const groupedProducts = useMemo(() => {
     return CATEGORIES.filter(cat => cat !== 'All').map(cat => ({
       name: cat,
       products: PRODUCTS.filter(p => p.category === cat)
     })).filter(group => group.products.length > 0);
-  }, []);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-
-    const checkDevice = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-
-    checkDevice();
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', checkDevice);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', checkDevice);
-    };
   }, []);
 
   useEffect(() => {
@@ -73,18 +51,6 @@ export default function ShowcasePage() {
     return () => categoryObserver.disconnect();
   }, []);
 
-  const handleMouseEnter = (text: string = "") => {
-    if (isDesktop) {
-      setIsHovering(true);
-      setCursorText(text);
-    }
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setCursorText("");
-  };
-
   const handleAddToCart = (product: any) => {
     addToCart({
       id: product.id,
@@ -106,10 +72,7 @@ export default function ShowcasePage() {
   };
 
   return (
-    <div className={cn(
-      "h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white",
-      isDesktop ? "cursor-none" : "cursor-auto"
-    )}>
+    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white">
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
@@ -125,48 +88,18 @@ export default function ShowcasePage() {
         .animate-subtle-zoom {
           animation: subtle-zoom 15s infinite alternate ease-in-out;
         }
-        @media (min-width: 1024px) {
-          body {
-            cursor: none !important;
-          }
-          a, button, [role="button"] {
-            cursor: none !important;
-          }
-        }
       `}</style>
-
-      {isDesktop && (
-        <div 
-          className={cn(
-            "fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999] transition-transform duration-100 ease-out flex items-center justify-center mix-blend-difference overflow-hidden",
-            isHovering ? 'bg-primary/20 border-white' : 'bg-transparent'
-          )}
-          style={{ 
-            transform: `translate(${mousePos.x - 16}px, ${mousePos.y - 16}px) scale(${isHovering ? 2.5 : 1})`,
-          }}
-        >
-          {cursorText && (
-            <span className="text-[4px] uppercase font-bold text-white tracking-tighter animate-in fade-in zoom-in duration-200">
-              {cursorText}
-            </span>
-          )}
-        </div>
-      )}
 
       <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
-            <div 
-              onMouseEnter={() => handleMouseEnter(`Bag (${cartCount})`)}
-              onMouseLeave={handleMouseLeave}
-              className="relative"
-            >
+            <div className="relative">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500"
               >
-                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+                <ShoppingBag className="w-5 h-5 md:w-6 h-6" />
                 {cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-in zoom-in">
                     {cartCount}
@@ -281,11 +214,7 @@ export default function ShowcasePage() {
           </SheetContent>
         </Sheet>
 
-        <Link 
-          href="/" 
-          onMouseEnter={() => handleMouseEnter("Exit")}
-          onMouseLeave={handleMouseLeave}
-        >
+        <Link href="/">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -384,11 +313,7 @@ export default function ShowcasePage() {
                     "flex flex-col sm:flex-row gap-4 pt-6 md:pt-8 transition-all duration-1000 delay-700",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                   )}>
-                    <div 
-                      onMouseEnter={() => handleMouseEnter("Purchase")}
-                      onMouseLeave={handleMouseLeave}
-                      className="w-full sm:w-auto"
-                    >
+                    <div className="w-full sm:w-auto">
                       <Button 
                         onClick={() => handleAddToCart(product)}
                         className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
@@ -397,11 +322,7 @@ export default function ShowcasePage() {
                       </Button>
                     </div>
                     
-                    <div 
-                      onMouseEnter={() => handleMouseEnter("Inquiry")}
-                      onMouseLeave={handleMouseLeave}
-                      className="w-full sm:w-auto"
-                    >
+                    <div className="w-full sm:w-auto">
                       <Button 
                         variant="outline" 
                         onClick={() => handleInquiry(product.name)}
@@ -434,8 +355,6 @@ export default function ShowcasePage() {
           <button
             key={i}
             onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
-            onMouseEnter={() => handleMouseEnter(group.name)}
-            onMouseLeave={handleMouseLeave}
             className="group relative flex items-center justify-end"
           >
             <span className={cn(
