@@ -4,12 +4,36 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ArrowDown, ShoppingBag } from 'lucide-react';
+import { X, ArrowDown, ShoppingBag, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
 
 export default function ShowcasePage() {
+  const [activeSection, setActiveSection] = useState(0);
+
+  // نستخدم Intersection Observer لمعرفة القسم الظاهر حالياً وتحديث المؤشرات الجانبية
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = Number(entry.target.getAttribute('data-index'));
+            setActiveSection(index);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    document.querySelectorAll('section[data-index]').forEach((section) => {
+      observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar">
+    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white">
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
@@ -18,76 +42,104 @@ export default function ShowcasePage() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
+        @keyframes subtle-zoom {
+          0% { transform: scale(1.05); }
+          100% { transform: scale(1.15); }
+        }
+        .animate-subtle-zoom {
+          animation: subtle-zoom 20s infinite alternate ease-in-out;
+        }
       `}</style>
 
-      {/* Back Button */}
-      <Link href="/" className="fixed top-8 right-8 z-50">
-        <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 rounded-full h-12 w-12 border border-white/20 backdrop-blur-md">
-          <X className="w-6 h-6" />
+      {/* Back Button with hover animation */}
+      <Link href="/" className="fixed top-8 right-8 z-50 animate-in fade-in zoom-in duration-1000 delay-500">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-primary hover:scale-110 rounded-full h-14 w-14 border border-white/20 backdrop-blur-xl transition-all duration-500 group"
+        >
+          <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
         </Button>
       </Link>
 
-      {/* Floating Logo */}
-      <div className="fixed top-8 left-8 z-50">
-        <h2 className="text-2xl font-headline font-bold text-primary tracking-tighter">LuxeFinds</h2>
+      {/* Floating Animated Logo */}
+      <div className="fixed top-8 left-8 z-50 animate-in fade-in slide-in-from-top duration-1000">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-sm rotate-45 animate-pulse">
+            <Sparkles className="text-white w-5 h-5 -rotate-45" />
+          </div>
+          <h2 className="text-2xl font-headline font-bold text-white tracking-tighter">LuxeFinds</h2>
+        </div>
       </div>
 
       {PRODUCTS.map((product, index) => (
         <section 
           key={product.id} 
+          data-index={index}
           className="h-screen w-full snap-start relative flex flex-col items-center justify-center overflow-hidden"
         >
-          {/* Background Image with immersive effect */}
-          <div className="absolute inset-0 z-0">
+          {/* Background Image with immersive subtle zoom animation */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
             <Image 
               src={product.image} 
               alt={product.name} 
               fill 
               priority={index === 0}
-              className="object-cover opacity-70 scale-105"
+              className="object-cover opacity-60 animate-subtle-zoom"
             />
-            {/* Dark Overlays for readability */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent hidden md:block" />
+            {/* Multi-layered Gradients for depth */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-transparent to-transparent hidden md:block" />
+            <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
           </div>
 
-          {/* Content Container - Generalized across the page */}
+          {/* Content Container */}
           <div className="relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center text-white">
-            <div className="max-w-4xl space-y-12">
+            <div className="max-w-5xl space-y-12">
               
-              {/* Category & Badge */}
-              <div className="animate-in slide-in-from-left duration-700">
-                <span className="inline-block py-1 px-4 border border-primary text-primary font-bold tracking-[0.4em] uppercase text-[10px] mb-4">
+              {/* Category Badge with Slide Animation */}
+              <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in duration-1000' : 'opacity-0'}`}>
+                <span className="inline-flex items-center gap-2 py-1.5 px-6 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.4em] uppercase text-[10px] mb-6 backdrop-blur-md rounded-full">
+                  <span className="w-2 h-2 bg-primary rounded-full animate-ping" />
                   {product.category}
                 </span>
-                <h1 className="text-6xl md:text-9xl font-headline italic leading-none drop-shadow-2xl">
-                  {product.name}
+              </div>
+
+              {/* Product Name with Split/Staggered Effect */}
+              <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in delay-200 duration-1000' : 'opacity-0'}`}>
+                <h1 className="text-7xl md:text-[10rem] font-headline italic leading-none drop-shadow-2xl mb-4 text-white">
+                  {product.name.split(' ').map((word, i) => (
+                    <span key={i} className="inline-block mr-6 last:text-primary">{word} </span>
+                  ))}
                 </h1>
               </div>
 
-              {/* Specs Grid: Price & Materials */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 border-l-2 border-primary/50 pl-8 py-4 animate-in slide-in-from-left delay-200 duration-700">
-                <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-bold">Price Point</p>
-                  <p className="text-4xl md:text-5xl font-body font-light">${product.price.toLocaleString()}</p>
+              {/* Specs Grid with delayed entrance */}
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-16 border-l-2 border-primary/30 pl-10 py-6 ${activeSection === index ? 'animate-in slide-in-from-bottom fade-in delay-500 duration-1000' : 'opacity-0'}`}>
+                <div className="space-y-3 group cursor-default">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Price Point</p>
+                  <p className="text-5xl md:text-7xl font-body font-light tabular-nums">
+                    <span className="text-primary text-3xl mr-1">$</span>
+                    {product.price.toLocaleString()}
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-bold">Material Composition</p>
-                  <p className="text-lg md:text-xl italic font-body text-white/90 leading-relaxed">
+                <div className="space-y-3 group cursor-default">
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Material Composition</p>
+                  <p className="text-xl md:text-2xl italic font-body text-white/80 leading-relaxed max-w-sm">
                     {product.materials}
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-4 pt-6 animate-in fade-in slide-in-from-bottom delay-500 duration-700">
+              {/* Action Buttons with reveal animation */}
+              <div className={`flex flex-wrap gap-6 pt-10 ${activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'}`}>
                 <Link href={`/product/${product.id}`}>
-                  <Button className="bg-primary hover:bg-primary/90 text-white rounded-none px-12 h-16 text-sm font-bold uppercase tracking-widest transition-all hover:px-16">
-                    <ShoppingBag className="mr-2 h-4 w-4" /> Shop Piece
+                  <Button className="bg-primary hover:bg-white hover:text-primary text-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
+                    <ShoppingBag className="mr-3 h-5 w-5" /> Shop Piece
                   </Button>
                 </Link>
                 <Link href="/shop">
-                  <Button variant="outline" className="bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 rounded-none px-12 h-16 text-sm font-bold uppercase tracking-widest">
+                  <Button variant="outline" className="bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500">
                     Browse More
                   </Button>
                 </Link>
@@ -95,21 +147,29 @@ export default function ShowcasePage() {
             </div>
           </div>
           
-          {/* Vertical Navigation Indicator */}
+          {/* Enhanced Scroll Indicator */}
           {index < PRODUCTS.length - 1 && (
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30 animate-bounce">
-               <span className="text-[10px] uppercase tracking-[0.5em] text-white font-bold">Scroll</span>
-               <ArrowDown className="text-white w-4 h-4" />
+            <div className={`absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 transition-all duration-1000 ${activeSection === index ? 'opacity-40 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+               <span className="text-[10px] uppercase tracking-[0.8em] text-white font-bold ml-[0.8em]">Next Piece</span>
+               <div className="w-px h-16 bg-gradient-to-b from-primary to-transparent animate-bounce" />
             </div>
           )}
 
-          {/* Side Progress Indicator */}
-          <div className="fixed right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 z-40">
+          {/* Side Nav Dots (Desktop) */}
+          <div className="fixed right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
             {PRODUCTS.map((_, i) => (
-              <div 
-                key={i} 
-                className={`w-1 h-8 transition-all duration-500 ${index === i ? 'bg-primary scale-x-150' : 'bg-white/20'}`} 
-              />
+              <button
+                key={i}
+                onClick={() => document.querySelectorAll('section')[i].scrollIntoView({ behavior: 'smooth' })}
+                className="group relative flex items-center justify-end"
+              >
+                <span className={`absolute right-8 text-[10px] uppercase tracking-widest font-bold text-primary transition-all duration-500 ${activeSection === i ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+                  0{i + 1}
+                </span>
+                <div 
+                  className={`w-2 h-2 rounded-full transition-all duration-700 border border-primary ${activeSection === i ? 'bg-primary scale-[2.5] shadow-[0_0_15px_hsl(var(--primary))]' : 'bg-white/20'}`} 
+                />
+              </button>
             ))}
           </div>
         </section>
