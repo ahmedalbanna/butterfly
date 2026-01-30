@@ -8,8 +8,12 @@ import { X, ShoppingBag, Sparkles, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useCart } from '@/context/cart-context';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ShowcasePage() {
+  const { addToCart } = useCart();
+  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -67,6 +71,19 @@ export default function ShowcasePage() {
   const handleMouseLeave = () => {
     setIsHovering(false);
     setCursorText("");
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
+    toast({
+      title: "تمت الإضافة للحقيبة",
+      description: `تمت إضافة ${product.name} بنجاح إلى حقيبة التسوق الخاصة بك.`,
+    });
   };
 
   return (
@@ -211,16 +228,18 @@ export default function ShowcasePage() {
                 "flex flex-col sm:flex-row gap-4 md:gap-6 pt-6 md:pt-10",
                 activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'
               )}>
-                <Link 
-                  href={`/product/${product.id}`}
+                <div 
                   onMouseEnter={() => handleMouseEnter("Purchase")}
                   onMouseLeave={handleMouseLeave}
                   className="w-full sm:w-auto"
                 >
-                  <Button className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
+                  <Button 
+                    onClick={() => handleAddToCart(product)}
+                    className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]"
+                  >
                     <ShoppingBag className="mr-2 md:mr-3 h-4 md:h-5 w-4 md:w-5" /> Buy Piece
                   </Button>
-                </Link>
+                </div>
                 
                 <Link 
                   href={`/product/${product.id}`}
