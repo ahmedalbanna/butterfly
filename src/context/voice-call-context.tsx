@@ -1,8 +1,6 @@
-
 "use client"
 
 import React, { createContext, useContext, useState, useRef } from 'react';
-import { productVoiceInquiry } from '@/ai/flows/product-voice-inquiry-flow';
 import { useToast } from '@/hooks/use-toast';
 
 type VoiceCallContextType = {
@@ -23,30 +21,24 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const startCall = async (product: { name: string; materials: string }) => {
     setIsCalling(true);
     setIsCallConnecting(true);
     setAudioUrl(null);
 
-    try {
-      const response = await productVoiceInquiry({
-        productName: product.name,
-        productMaterials: product.materials,
-      });
-      setAudioUrl(response.audioUri);
+    // محاكاة وقت الاتصال قبل تشغيل التسجيل الثابت
+    setTimeout(() => {
+      // استخدام تسجيل صوتي ثابت (يمكن استبداله بملف محلي لاحقاً)
+      // هذا الرابط كمثال لتسجيل ترحيبي
+      setAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); 
       setIsCallConnecting(false);
-    } catch (error) {
-      console.error('Call failed:', error);
-      setIsCalling(false);
-      setIsCallConnecting(false);
+      
       toast({
-        variant: "destructive",
-        title: "Connection Failed",
-        description: "Could not connect to the stylist. Please try again later.",
+        title: "Connected to Stylist",
+        description: `You are now listening to information about ${product.name}.`,
       });
-    }
+    }, 2000);
   };
 
   const endCall = () => {
