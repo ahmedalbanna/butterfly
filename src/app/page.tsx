@@ -134,7 +134,7 @@ export default function Home() {
   };
 
   return (
-    <div ref={containerRef} className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white">
+    <div ref={containerRef} className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white box-border">
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
@@ -192,7 +192,7 @@ export default function Home() {
               </Button>
             </div>
           </SheetTrigger>
-          <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
+          <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col box-border">
             <SheetHeader className="p-6 md:p-8 border-b border-white/10">
               <SheetTitle className="text-2xl md:text-3xl font-headline italic text-white flex items-center gap-3">
                 <ShoppingBag className="text-primary" /> Your Selection
@@ -208,7 +208,7 @@ export default function Home() {
               ) : (
                 <div className="space-y-8 md:space-y-10">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex gap-4 md:gap-6 group">
+                    <div key={item.id} className="flex gap-4 md:gap-6 group box-border">
                       <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
                         {item.image && (
                           <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -262,7 +262,7 @@ export default function Home() {
             </ScrollArea>
 
             {cart.length > 0 && (
-              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 space-y-4 md:space-y-6">
+              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 space-y-4 md:space-y-6 box-border">
                 <div className="space-y-2 md:space-y-3">
                   <div className="flex justify-between text-[10px] md:text-xs text-white/60 uppercase tracking-widest">
                     <span>Estimated Subtotal</span>
@@ -297,7 +297,7 @@ export default function Home() {
         <section 
           key={group.name} 
           data-category-index={categoryIndex}
-          className="h-screen w-full snap-start relative flex overflow-x-scroll snap-x snap-mandatory hide-scrollbar bg-black"
+          className="h-screen w-full snap-start relative flex overflow-x-scroll snap-x snap-mandatory hide-scrollbar bg-black box-border"
         >
           {group.products.map((product, productIndex) => {
             const isVisible = activeCategoryIndex === categoryIndex && activeProductIndices[categoryIndex] === productIndex;
@@ -308,12 +308,12 @@ export default function Home() {
                 key={product.id}
                 data-parent-category-index={categoryIndex}
                 data-product-index={productIndex}
-                className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
+                className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black box-border"
               >
                 {/* Product Visuals */}
                 <div 
                   onClick={(e) => handleImageInteraction(e, product.id)}
-                  className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media cursor-crosshair"
+                  className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media cursor-crosshair box-border"
                 >
                   {product.image && (
                     <Image 
@@ -365,8 +365,8 @@ export default function Home() {
                 </div>
 
                 {/* Product Info */}
-                <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black">
-                  <div className="max-w-xl space-y-6 md:space-y-10">
+                <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black box-border overflow-hidden">
+                  <div className="max-w-xl w-full space-y-6 md:space-y-10 box-border">
                     
                     {/* Category Header */}
                     <div className={cn(
@@ -414,12 +414,12 @@ export default function Home() {
 
                     {/* Actions */}
                     <div className={cn(
-                      "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300",
+                      "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
                       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     )}>
                       <Button 
                         onClick={() => handleAddToCart(product)}
-                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
                       >
                         <ShoppingBag className="mr-2 h-4 w-4" /> Add To Bag
                       </Button>
@@ -427,7 +427,7 @@ export default function Home() {
                       <Button 
                         variant="outline" 
                         onClick={() => handleInquiry(product.name)}
-                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
                       >
                         <MessageCircle className="mr-2 h-4 w-4" /> Inquiry
                       </Button>
@@ -436,7 +436,7 @@ export default function Home() {
                 </div>
 
                 {/* Progress Dot Bar (Mobile) */}
-                <div className="absolute bottom-16 left-0 w-full flex justify-center lg:hidden gap-1.5 z-40 px-6">
+                <div className="absolute bottom-16 left-0 w-full flex justify-center lg:hidden gap-1.5 z-40 px-6 box-border">
                   {group.products.map((_, i) => (
                     <div 
                       key={i} 
@@ -475,7 +475,7 @@ export default function Home() {
       </div>
 
       {/* Unified Help Overlay */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/40 z-40 pointer-events-none px-6 backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/20">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/40 z-40 pointer-events-none px-6 backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/20 box-border">
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3 text-primary animate-pulse" />
           <span className="text-[7px] md:text-[9px] uppercase tracking-[0.2em] font-bold text-white">Swipe Designs</span>
