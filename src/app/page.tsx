@@ -219,8 +219,8 @@ export default function Home() {
               </Button>
             </div>
           </SheetTrigger>
-          <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col box-border">
-            <SheetHeader className="p-6 md:p-8 border-b border-white/10">
+          <SheetContent side="right" className="bg-[#0a0a0a] border-l border-white/10 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col box-border shadow-2xl">
+            <SheetHeader className="p-6 md:p-8 border-b border-white/10 bg-black/20 backdrop-blur-md">
               <SheetTitle className="text-2xl md:text-3xl font-headline italic text-white flex items-center gap-3">
                 <ShoppingBag className="text-primary" /> Your Selection
               </SheetTitle>
@@ -228,17 +228,19 @@ export default function Home() {
             
             <ScrollArea className="flex-1 px-6 md:px-8 py-6">
               {cart.length === 0 ? (
-                <div className="h-[40vh] flex flex-col items-center justify-center space-y-4 opacity-50">
-                  <ShoppingBag className="w-12 h-12" />
-                  <p className="font-body italic text-lg text-center px-4">Your shopping bag is waiting for its first treasure.</p>
+                <div className="h-[50vh] flex flex-col items-center justify-center space-y-6 opacity-30">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+                    <ShoppingBag className="w-10 h-10" />
+                  </div>
+                  <p className="font-body italic text-lg text-center px-4">Your boutique bag is empty.</p>
                 </div>
               ) : (
                 <div className="space-y-8 md:space-y-10">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex gap-4 md:gap-6 group box-border">
-                      <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
+                    <div key={item.id} className="flex gap-4 md:gap-6 group box-border animate-in fade-in slide-in-from-right-4 duration-500">
+                      <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/[0.03] shrink-0 overflow-hidden rounded-sm border border-white/5 transition-colors group-hover:border-primary/30">
                         {item.image && (
-                          <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                          <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                         )}
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
@@ -250,36 +252,38 @@ export default function Home() {
                           <div className="flex gap-1 md:gap-2">
                             <button 
                               onClick={() => handleInquiry(item.name)}
-                              className="text-white/40 hover:text-primary transition-colors p-1"
+                              className="text-white/20 hover:text-primary transition-colors p-1"
+                              title="Expert Inquiry"
                             >
                               <MessageCircle className="w-4 h-4" />
                             </button>
                             <button 
                               onClick={() => removeFromCart(item.id)}
-                              className="text-white/40 hover:text-destructive transition-colors p-1"
+                              className="text-white/20 hover:text-destructive transition-colors p-1"
+                              title="Remove Piece"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
                         <div className="flex items-center justify-between mt-2 md:mt-4">
-                          <div className="flex items-center border border-white/10 rounded-none bg-white/5">
+                          <div className="flex items-center border border-white/10 rounded-sm bg-white/5 overflow-hidden">
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="p-1.5 hover:text-primary transition-colors"
+                              className="p-1.5 hover:bg-white/10 transition-colors disabled:opacity-20"
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                            <span className="w-8 text-center text-xs font-bold font-mono">{item.quantity}</span>
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="p-1.5 hover:text-primary transition-colors"
+                              className="p-1.5 hover:bg-white/10 transition-colors"
                             >
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
-                          <p className="font-bold text-primary text-sm md:text-base">${(item.price * item.quantity).toLocaleString()}</p>
+                          <p className="font-bold text-primary text-sm md:text-base tracking-tighter">${(item.price * item.quantity).toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
@@ -289,30 +293,30 @@ export default function Home() {
             </ScrollArea>
 
             {cart.length > 0 && (
-              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 space-y-4 md:space-y-6 box-border">
-                <div className="space-y-2 md:space-y-3">
-                  <div className="flex justify-between text-[10px] md:text-xs text-white/60 uppercase tracking-widest">
-                    <span>Estimated Subtotal</span>
+              <div className="p-6 md:p-8 bg-black/40 backdrop-blur-xl border-t border-white/10 space-y-4 md:space-y-6 box-border">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-[10px] md:text-xs text-white/40 uppercase tracking-[0.2em]">
+                    <span>Subtotal</span>
                     <span>${cartTotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-xl md:text-2xl font-headline font-bold">
-                    <span className="italic">Total</span>
-                    <span className="text-primary">${cartTotal.toLocaleString()}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl md:text-2xl font-headline italic">Estimated Total</span>
+                    <span className="text-2xl md:text-3xl font-headline font-bold text-primary">${cartTotal.toLocaleString()}</span>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-2 md:gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <Link href="/checkout" className="w-full">
                     <Button 
-                      className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm box-border"
+                      className="w-full h-12 md:h-16 bg-primary text-white rounded-none uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm box-border shadow-[0_4px_20px_rgba(var(--primary),0.2)]"
                     >
                       Process Order <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </Link>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 text-[8px] md:text-[10px] text-white/40 uppercase tracking-widest">
-                  <ShieldCheck className="w-3 h-3" /> Secure & Private Checkout
+                <div className="flex items-center justify-center gap-2 text-[8px] md:text-[10px] text-white/30 uppercase tracking-[0.3em]">
+                  <ShieldCheck className="w-3 h-3 text-primary/50" /> Secure Boutique Checkout
                 </div>
               </div>
             )}
