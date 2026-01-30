@@ -24,6 +24,39 @@ interface SparkleEffect {
   y: number;
 }
 
+const TypewriterEffect = ({ text, delay = 0, speed = 30, active = false }: { text: string, delay?: number, speed?: number, active?: boolean }) => {
+  const [displayText, setDisplayText] = useState('');
+
+  useEffect(() => {
+    if (!active) {
+      setDisplayText('');
+      return;
+    }
+
+    let current = '';
+    let index = 0;
+    const initialTimeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        if (index < text.length) {
+          current += text[index];
+          setDisplayText(current);
+          index++;
+        } else {
+          clearInterval(interval);
+        }
+      }, speed);
+      return () => clearInterval(interval);
+    }, delay);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      setDisplayText('');
+    };
+  }, [text, active, delay, speed]);
+
+  return <span>{displayText}</span>;
+};
+
 export default function Home() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
   const { toast } = useToast();
@@ -125,7 +158,6 @@ export default function Home() {
     const newSparkle = { id: Date.now(), x, y };
     setSparkles(prev => [...prev, newSparkle]);
     
-    // Toggle zoom
     setIsZoomed(prev => ({ ...prev, [productId]: !prev[productId] }));
 
     setTimeout(() => {
@@ -382,13 +414,13 @@ export default function Home() {
                       <p className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Piece 0{productIndex + 1} / 0{group.products.length}</p>
                     </div>
 
-                    {/* Title */}
+                    {/* Title with Typewriter */}
                     <div className={cn(
                       "transition-content delay-100",
                       isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                     )}>
-                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none">
-                        {product.name}
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none min-h-[1.2em]">
+                        <TypewriterEffect text={product.name} active={isVisible} speed={50} />
                       </h1>
                     </div>
 
@@ -401,13 +433,13 @@ export default function Home() {
                         <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Market Price</p>
                         <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums">
                           <span className="text-primary text-lg md:text-2xl mr-1">$</span>
-                          {product.price.toLocaleString()}
+                          <TypewriterEffect text={product.price.toLocaleString()} active={isVisible} speed={40} delay={600} />
                         </p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Materials</p>
-                        <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
-                          {product.materials}
+                        <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed min-h-[3em]">
+                          <TypewriterEffect text={product.materials} active={isVisible} speed={25} delay={1000} />
                         </p>
                       </div>
                     </div>
@@ -490,3 +522,4 @@ export default function Home() {
     </div>
   );
 }
+
