@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -24,7 +24,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ShowcasePage() {
@@ -100,6 +99,13 @@ export default function ShowcasePage() {
     });
   };
 
+  const handleInquiry = (productName: string) => {
+    toast({
+      title: "Inquiry Sent",
+      description: `A personal stylist will contact you regarding ${productName} shortly.`,
+    });
+  };
+
   return (
     <div className={cn(
       "h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white",
@@ -155,7 +161,7 @@ export default function ShowcasePage() {
         <Sheet>
           <SheetTrigger asChild>
             <div 
-              onMouseEnter={() => handleMouseEnter(`Cart (${cartCount})`)}
+              onMouseEnter={() => handleMouseEnter(`Bag (${cartCount})`)}
               onMouseLeave={handleMouseLeave}
               className="relative"
             >
@@ -173,10 +179,10 @@ export default function ShowcasePage() {
               </Button>
             </div>
           </SheetTrigger>
-          <SheetContent side="right" className="bg-black/95 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
+          <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
             <SheetHeader className="p-8 border-b border-white/10">
               <SheetTitle className="text-3xl font-headline italic text-white flex items-center gap-3">
-                <ShoppingBag className="text-primary" /> Your Bag
+                <ShoppingBag className="text-primary" /> Your Selection
               </SheetTitle>
             </SheetHeader>
             
@@ -184,24 +190,36 @@ export default function ShowcasePage() {
               {cart.length === 0 ? (
                 <div className="h-[40vh] flex flex-col items-center justify-center space-y-4 opacity-50">
                   <ShoppingBag className="w-12 h-12" />
-                  <p className="font-body italic text-lg text-center">Your shopping bag is waiting to be filled.</p>
+                  <p className="font-body italic text-lg text-center">Your shopping bag is waiting for its first treasure.</p>
                 </div>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-10">
                   {cart.map((item) => (
                     <div key={item.id} className="flex gap-6 group">
-                      <div className="relative w-20 h-24 bg-white/5 shrink-0 overflow-hidden rounded-sm">
+                      <div className="relative w-24 h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
                         <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-headline text-lg leading-tight">{item.name}</h4>
-                          <button 
-                            onClick={() => removeFromCart(item.id)}
-                            className="text-white/40 hover:text-primary transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="space-y-1">
+                            <h4 className="font-headline text-xl leading-tight group-hover:text-primary transition-colors">{item.name}</h4>
+                            <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleInquiry(item.name)}
+                              className="text-white/40 hover:text-primary transition-colors p-1"
+                              title="Inquire about this piece"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-white/40 hover:text-destructive transition-colors p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between mt-4">
                           <div className="flex items-center border border-white/10 rounded-none bg-white/5">
@@ -231,21 +249,35 @@ export default function ShowcasePage() {
 
             {cart.length > 0 && (
               <div className="p-8 bg-white/5 border-t border-white/10 space-y-6">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex justify-between text-sm text-white/60">
-                    <span>Subtotal</span>
+                    <span className="uppercase tracking-widest text-[10px]">Estimated Subtotal</span>
                     <span>${cartTotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-xl font-headline font-bold">
-                    <span>Total</span>
+                  <div className="flex justify-between text-2xl font-headline font-bold">
+                    <span className="italic">Total</span>
                     <span className="text-primary">${cartTotal.toLocaleString()}</span>
                   </div>
                 </div>
-                <Link href="/checkout" className="block w-full">
-                  <Button className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500">
-                    Secure Checkout <ArrowRight className="ml-2 w-4 h-4" />
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <Link href="/checkout" className="block w-full">
+                    <Button className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500">
+                      Purchase Now <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleInquiry("the entire selection")}
+                    className="w-full h-14 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500"
+                  >
+                    Inquire About Bag <MessageCircle className="ml-2 w-4 h-4" />
                   </Button>
-                </Link>
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 uppercase tracking-widest">
+                  <ShieldCheck className="w-3 h-3" /> Secure & Private Checkout
+                </div>
               </div>
             )}
           </SheetContent>
@@ -254,7 +286,6 @@ export default function ShowcasePage() {
         {/* Back Button */}
         <Link 
           href="/" 
-          className=""
           onMouseEnter={() => handleMouseEnter("Exit")}
           onMouseLeave={handleMouseLeave}
         >
@@ -370,16 +401,19 @@ export default function ShowcasePage() {
                   </Button>
                 </div>
                 
-                <Link 
-                  href={`/product/${product.id}`}
+                <div 
                   onMouseEnter={() => handleMouseEnter("Inquiry")}
                   onMouseLeave={handleMouseLeave}
                   className="w-full sm:w-auto"
                 >
-                  <Button variant="outline" className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500">
-                    <MessageCircle className="mr-2 h-4 w-4" /> Details
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleInquiry(product.name)}
+                    className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" /> Inquire Now
                   </Button>
-                </Link>
+                </div>
               </div>
             </div>
           </div>
