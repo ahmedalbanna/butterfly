@@ -23,7 +23,6 @@ export default function ShowcasePage() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
-  const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const [cursorText, setCursorText] = useState("");
@@ -138,19 +137,19 @@ export default function ShowcasePage() {
         }
       `}</style>
 
-      {/* Custom Cursor */}
+      {/* Custom Cursor - High Responsiveness */}
       {isDesktop && (
         <div 
           className={cn(
-            "fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999] transition-transform duration-300 ease-out flex items-center justify-center mix-blend-difference overflow-hidden",
-            isHovering ? 'scale-[3] bg-primary/20 border-white' : 'scale-100 bg-transparent'
+            "fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999] transition-transform duration-100 ease-out flex items-center justify-center mix-blend-difference overflow-hidden",
+            isHovering ? 'bg-primary/20 border-white' : 'bg-transparent'
           )}
           style={{ 
             transform: `translate(${mousePos.x - 16}px, ${mousePos.y - 16}px) scale(${isHovering ? 2.5 : 1})`,
           }}
         >
           {cursorText && (
-            <span className="text-[4px] uppercase font-bold text-white tracking-tighter animate-in fade-in zoom-in duration-300">
+            <span className="text-[4px] uppercase font-bold text-white tracking-tighter animate-in fade-in zoom-in duration-200">
               {cursorText}
             </span>
           )}
