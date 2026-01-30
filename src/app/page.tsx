@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
 import { PRODUCTS } from '@/lib/products';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, ArrowRight } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Carousel,
@@ -17,6 +17,13 @@ import {
 export default function Home() {
   const featuredProducts = PRODUCTS.filter(p => p.featured);
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-image');
+
+  // مصفوفة تحتوي على 3 أنماط من الإطارات الجذابة
+  const productFrames = [
+    "border-[12px] border-white shadow-2xl", // نمط المعرض (Gallery)
+    "outline outline-1 outline-primary/50 outline-offset-[10px] shadow-sm", // النمط العصري المنسحب (Modern Offset)
+    "border-2 border-primary/10 p-2 bg-white/40 backdrop-blur-sm ring-1 ring-primary/5" // النمط الفاخر الناعم (Soft Luxe)
+  ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -60,7 +67,7 @@ export default function Home() {
       {/* Featured Carousel Section */}
       <section className="py-24 bg-white overflow-hidden">
         <div className="container mx-auto px-4">
-          <div className="flex justify-between items-end mb-12">
+          <div className="flex justify-between items-end mb-16">
             <div className="space-y-2">
               <span className="text-primary font-bold tracking-widest text-xs uppercase">Curated For You</span>
               <h2 className="text-4xl md:text-5xl font-headline italic">Seasonal Highlights</h2>
@@ -77,11 +84,11 @@ export default function Home() {
             }}
             className="w-full relative"
           >
-            <CarouselContent className="-ml-4 md:-ml-8">
-              {featuredProducts.map((product) => (
-                <CarouselItem key={product.id} className="pl-4 md:pl-8 basis-full sm:basis-1/2 lg:basis-1/4">
-                  <Link href={`/product/${product.id}`} className="group space-y-4 block">
-                    <div className="relative aspect-[4/5] overflow-hidden bg-muted rounded-sm shadow-sm">
+            <CarouselContent className="-ml-8 md:-ml-12">
+              {featuredProducts.map((product, index) => (
+                <CarouselItem key={product.id} className="pl-8 md:pl-12 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+                  <Link href={`/product/${product.id}`} className="group space-y-8 block py-4">
+                    <div className={`relative aspect-[4/5] overflow-hidden transition-all duration-500 group-hover:scale-[1.02] ${productFrames[index % 3]}`}>
                       <Image 
                         src={product.image} 
                         alt={product.name} 
@@ -90,7 +97,7 @@ export default function Home() {
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <span className="text-[10px] text-secondary font-bold tracking-widest uppercase">{product.category}</span>
                       <h3 className="text-xl font-headline group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
                       <p className="text-lg font-body font-medium text-primary">${product.price.toLocaleString()}</p>

@@ -16,6 +16,13 @@ export default function ShopPage() {
     ? PRODUCTS 
     : PRODUCTS.filter(p => p.category === activeCategory);
 
+  // مصفوفة تحتوي على 3 أنماط من الإطارات الجذابة لتكرارها في الشبكة
+  const productFrames = [
+    "border-[10px] border-white shadow-lg", // نمط المعرض
+    "outline outline-1 outline-primary/30 outline-offset-4 shadow-sm", // النمط العصري
+    "border-2 border-primary/5 p-2 bg-white/30 backdrop-blur-sm" // النمط الفاخر
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -46,10 +53,10 @@ export default function ShopPage() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-          {filteredProducts.map((product) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-16">
+          {filteredProducts.map((product, index) => (
             <Link key={product.id} href={`/product/${product.id}`} className="group flex flex-col">
-              <div className="relative aspect-[4/5] bg-muted overflow-hidden mb-4">
+              <div className={`relative aspect-[4/5] overflow-hidden mb-6 transition-transform duration-500 group-hover:scale-[1.03] ${productFrames[index % 3]}`}>
                 <Image 
                   src={product.image} 
                   alt={product.name} 
@@ -57,12 +64,12 @@ export default function ShopPage() {
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 {product.featured && (
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-bold tracking-widest uppercase">
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-bold tracking-widest uppercase z-10">
                     Featured
                   </div>
                 )}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-center">
                 <span className="text-[10px] uppercase tracking-widest text-secondary font-bold">{product.category}</span>
                 <h3 className="text-lg font-headline transition-colors group-hover:text-primary">{product.name}</h3>
                 <p className="text-md font-body text-secondary">${product.price.toLocaleString()}</p>
