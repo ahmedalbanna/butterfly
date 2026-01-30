@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -17,9 +17,18 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function ShowcasePage() {
-  const { addToCart } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState(0);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -115,7 +124,7 @@ export default function ShowcasePage() {
           body {
             cursor: none !important;
           }
-          a, button {
+          a, button, [role="button"] {
             cursor: none !important;
           }
         }
@@ -140,21 +149,124 @@ export default function ShowcasePage() {
         </div>
       )}
 
-      {/* Back Button */}
-      <Link 
-        href="/" 
-        className="fixed top-4 right-4 md:top-8 md:right-8 z-50"
-        onMouseEnter={() => handleMouseEnter("Back")}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500 group"
+      {/* Top Controls (Back & Cart) */}
+      <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
+        {/* Dynamic Cart Sidebar */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <div 
+              onMouseEnter={() => handleMouseEnter(`Cart (${cartCount})`)}
+              onMouseLeave={handleMouseLeave}
+              className="relative"
+            >
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500"
+              >
+                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-in zoom-in">
+                    {cartCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-black/95 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
+            <SheetHeader className="p-8 border-b border-white/10">
+              <SheetTitle className="text-3xl font-headline italic text-white flex items-center gap-3">
+                <ShoppingBag className="text-primary" /> Your Bag
+              </SheetTitle>
+            </SheetHeader>
+            
+            <ScrollArea className="flex-1 px-8 py-6">
+              {cart.length === 0 ? (
+                <div className="h-[40vh] flex flex-col items-center justify-center space-y-4 opacity-50">
+                  <ShoppingBag className="w-12 h-12" />
+                  <p className="font-body italic text-lg text-center">Your shopping bag is waiting to be filled.</p>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex gap-6 group">
+                      <div className="relative w-20 h-24 bg-white/5 shrink-0 overflow-hidden rounded-sm">
+                        <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between py-1">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="font-headline text-lg leading-tight">{item.name}</h4>
+                          <button 
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-white/40 hover:text-primary transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="flex items-center border border-white/10 rounded-none bg-white/5">
+                            <button 
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="p-1.5 hover:text-primary transition-colors"
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="p-1.5 hover:text-primary transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="font-bold text-primary">${(item.price * item.quantity).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+
+            {cart.length > 0 && (
+              <div className="p-8 bg-white/5 border-t border-white/10 space-y-6">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-white/60">
+                    <span>Subtotal</span>
+                    <span>${cartTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xl font-headline font-bold">
+                    <span>Total</span>
+                    <span className="text-primary">${cartTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+                <Link href="/checkout" className="block w-full">
+                  <Button className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500">
+                    Secure Checkout <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
+
+        {/* Back Button */}
+        <Link 
+          href="/" 
+          className=""
+          onMouseEnter={() => handleMouseEnter("Exit")}
+          onMouseLeave={handleMouseLeave}
         >
-          <X className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-500" />
-        </Button>
-      </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500 group"
+          >
+            <X className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-500" />
+          </Button>
+        </Link>
+      </div>
 
       {/* Logo */}
       <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50">
