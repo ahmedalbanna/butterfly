@@ -4,14 +4,28 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ArrowDown, ShoppingBag, Sparkles } from 'lucide-react';
+import { X, ShoppingBag, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export default function ShowcasePage() {
   const [activeSection, setActiveSection] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const [cursorText, setCursorText] = useState("");
+  const cursorRef = useRef<HTMLDivElement>(null);
 
-  // نستخدم Intersection Observer لمعرفة القسم الظاهر حالياً وتحديث المؤشرات الجانبية
+  // تحديث موقع مؤشر الماوس المخصص
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  // نستخدم Intersection Observer لمعرفة القسم الظاهر حالياً
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -32,8 +46,18 @@ export default function ShowcasePage() {
     return () => observer.disconnect();
   }, []);
 
+  const handleMouseEnter = (text: string = "") => {
+    setIsHovering(true);
+    setCursorText(text);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setCursorText("");
+  };
+
   return (
-    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white">
+    <div className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white cursor-none">
       <style jsx global>{`
         .hide-scrollbar::-webkit-scrollbar {
           display: none;
@@ -49,10 +73,37 @@ export default function ShowcasePage() {
         .animate-subtle-zoom {
           animation: subtle-zoom 20s infinite alternate ease-in-out;
         }
+        /* إخفاء مؤشر الماوس الافتراضي في هذه الصفحة فقط */
+        body.showcase-active {
+          cursor: none !important;
+        }
+        body.showcase-active a, 
+        body.showcase-active button {
+          cursor: none !important;
+        }
       `}</style>
 
-      {/* Back Button with hover animation */}
-      <Link href="/" className="fixed top-8 right-8 z-50 animate-in fade-in zoom-in duration-1000 delay-500">
+      {/* Custom Cursor */}
+      <div 
+        className={`fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999] transition-transform duration-300 ease-out flex items-center justify-center mix-blend-difference overflow-hidden ${isHovering ? 'scale-[3] bg-primary/20 border-white' : 'scale-100 bg-transparent'}`}
+        style={{ 
+          transform: `translate(${mousePos.x - 16}px, ${mousePos.y - 16}px) scale(${isHovering ? 2.5 : 1})`,
+        }}
+      >
+        {cursorText && (
+          <span className="text-[4px] uppercase font-bold text-white tracking-tighter animate-in fade-in zoom-in duration-300">
+            {cursorText}
+          </span>
+        )}
+      </div>
+
+      {/* Back Button */}
+      <Link 
+        href="/" 
+        className="fixed top-8 right-8 z-50 animate-in fade-in zoom-in duration-1000 delay-500"
+        onMouseEnter={() => handleMouseEnter("Back")}
+        onMouseLeave={handleMouseLeave}
+      >
         <Button 
           variant="ghost" 
           size="icon" 
@@ -78,7 +129,7 @@ export default function ShowcasePage() {
           data-index={index}
           className="h-screen w-full snap-start relative flex flex-col items-center justify-center overflow-hidden"
         >
-          {/* Background Image with immersive subtle zoom animation */}
+          {/* Background Image */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             <Image 
               src={product.image} 
@@ -87,7 +138,6 @@ export default function ShowcasePage() {
               priority={index === 0}
               className="object-cover opacity-60 animate-subtle-zoom"
             />
-            {/* Multi-layered Gradients for depth */}
             <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-transparent to-transparent hidden md:block" />
             <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
@@ -97,7 +147,7 @@ export default function ShowcasePage() {
           <div className="relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center text-white">
             <div className="max-w-5xl space-y-12">
               
-              {/* Category Badge with Slide Animation */}
+              {/* Category Badge */}
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in duration-1000' : 'opacity-0'}`}>
                 <span className="inline-flex items-center gap-2 py-1.5 px-6 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.4em] uppercase text-[10px] mb-6 backdrop-blur-md rounded-full">
                   <span className="w-2 h-2 bg-primary rounded-full animate-ping" />
@@ -105,7 +155,7 @@ export default function ShowcasePage() {
                 </span>
               </div>
 
-              {/* Product Name with Split/Staggered Effect */}
+              {/* Product Name */}
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in delay-200 duration-1000' : 'opacity-0'}`}>
                 <h1 className="text-7xl md:text-[10rem] font-headline italic leading-none drop-shadow-2xl mb-4 text-white">
                   {product.name.split(' ').map((word, i) => (
@@ -114,7 +164,7 @@ export default function ShowcasePage() {
                 </h1>
               </div>
 
-              {/* Specs Grid with delayed entrance */}
+              {/* Specs Grid */}
               <div className={`grid grid-cols-1 md:grid-cols-2 gap-16 border-l-2 border-primary/30 pl-10 py-6 ${activeSection === index ? 'animate-in slide-in-from-bottom fade-in delay-500 duration-1000' : 'opacity-0'}`}>
                 <div className="space-y-3 group cursor-default">
                   <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Price Point</p>
@@ -131,14 +181,22 @@ export default function ShowcasePage() {
                 </div>
               </div>
 
-              {/* Action Buttons with reveal animation */}
+              {/* Action Buttons */}
               <div className={`flex flex-wrap gap-6 pt-10 ${activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'}`}>
-                <Link href={`/product/${product.id}`}>
+                <Link 
+                  href={`/product/${product.id}`}
+                  onMouseEnter={() => handleMouseEnter("Buy Now")}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <Button className="bg-primary hover:bg-white hover:text-primary text-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
                     <ShoppingBag className="mr-3 h-5 w-5" /> Shop Piece
                   </Button>
                 </Link>
-                <Link href="/shop">
+                <Link 
+                  href="/shop"
+                  onMouseEnter={() => handleMouseEnter("View All")}
+                  onMouseLeave={handleMouseLeave}
+                >
                   <Button variant="outline" className="bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500">
                     Browse More
                   </Button>
@@ -155,12 +213,14 @@ export default function ShowcasePage() {
             </div>
           )}
 
-          {/* Side Nav Dots (Desktop) */}
+          {/* Side Nav Dots */}
           <div className="fixed right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
             {PRODUCTS.map((_, i) => (
               <button
                 key={i}
                 onClick={() => document.querySelectorAll('section')[i].scrollIntoView({ behavior: 'smooth' })}
+                onMouseEnter={() => handleMouseEnter(`0${i+1}`)}
+                onMouseLeave={handleMouseLeave}
                 className="group relative flex items-center justify-end"
               >
                 <span className={`absolute right-8 text-[10px] uppercase tracking-widest font-bold text-primary transition-all duration-500 ${activeSection === i ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
