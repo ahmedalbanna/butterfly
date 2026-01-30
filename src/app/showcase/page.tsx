@@ -4,12 +4,19 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ShoppingBag, Sparkles, MessageCircle } from 'lucide-react';
+import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export default function ShowcasePage() {
   const { addToCart } = useCart();
@@ -20,7 +27,6 @@ export default function ShowcasePage() {
   const [cursorText, setCursorText] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // تحديث موقع مؤشر الماوس المخصص والتحقق من نوع الجهاز
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
@@ -40,7 +46,6 @@ export default function ShowcasePage() {
     };
   }, []);
 
-  // نستخدم Intersection Observer لمعرفة القسم الظاهر حالياً
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -81,8 +86,8 @@ export default function ShowcasePage() {
       image: product.image
     });
     toast({
-      title: "تمت الإضافة للحقيبة",
-      description: `تمت إضافة ${product.name} بنجاح إلى حقيبة التسوق الخاصة بك.`,
+      title: "Added to Bag",
+      description: `${product.name} has been added to your shopping bag.`,
     });
   };
 
@@ -116,7 +121,7 @@ export default function ShowcasePage() {
         }
       `}</style>
 
-      {/* Custom Cursor - Visible only on Desktop */}
+      {/* Custom Cursor */}
       {isDesktop && (
         <div 
           className={cn(
@@ -138,7 +143,7 @@ export default function ShowcasePage() {
       {/* Back Button */}
       <Link 
         href="/" 
-        className="fixed top-4 right-4 md:top-8 md:right-8 z-50 animate-in fade-in zoom-in duration-1000 delay-500"
+        className="fixed top-4 right-4 md:top-8 md:right-8 z-50"
         onMouseEnter={() => handleMouseEnter("Back")}
         onMouseLeave={handleMouseLeave}
       >
@@ -151,10 +156,10 @@ export default function ShowcasePage() {
         </Button>
       </Link>
 
-      {/* Floating Animated Logo */}
-      <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50 animate-in fade-in slide-in-from-top duration-1000">
+      {/* Logo */}
+      <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45 animate-pulse">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45">
             <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
           </div>
           <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter">LuxeFinds</h2>
@@ -167,26 +172,41 @@ export default function ShowcasePage() {
           data-index={index}
           className="h-screen w-full snap-start relative flex flex-col items-center justify-center overflow-hidden"
         >
-          {/* Background Image */}
+          {/* Background Images Carousel */}
           <div className="absolute inset-0 z-0 overflow-hidden">
-            <Image 
-              src={product.image} 
-              alt={product.name} 
-              fill 
-              priority={index === 0}
-              className="object-cover opacity-50 md:opacity-60 animate-subtle-zoom"
-            />
-            {/* Gradients for better text readability on all screens */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-black" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-transparent to-transparent hidden lg:block" />
-            <div className="absolute inset-0 bg-primary/5 mix-blend-overlay" />
+            <Carousel className="h-full w-full" opts={{ loop: true }}>
+              <CarouselContent className="h-full w-full ml-0">
+                {(product.images && product.images.length > 0 ? product.images : [product.image]).map((img, i) => (
+                  <CarouselItem key={i} className="h-full w-full p-0">
+                    <div className="relative h-full w-full">
+                      <Image 
+                        src={img} 
+                        alt={`${product.name} ${i + 1}`} 
+                        fill 
+                        priority={index === 0 && i === 0}
+                        className="object-cover opacity-50 md:opacity-60 animate-subtle-zoom"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {/* Show navigation buttons if more than one image */}
+              {(product.images && product.images.length > 1) && (
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 md:px-12 z-20 pointer-events-none">
+                  <CarouselPrevious className="static pointer-events-auto h-12 w-12 rounded-none bg-white/10 hover:bg-white/20 border-white/20 text-white translate-y-0" />
+                  <CarouselNext className="static pointer-events-auto h-12 w-12 rounded-none bg-white/10 hover:bg-white/20 border-white/20 text-white translate-y-0" />
+                </div>
+              )}
+            </Carousel>
+            {/* Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-black pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-transparent to-transparent hidden lg:block pointer-events-none" />
           </div>
 
-          {/* Content Container */}
+          {/* Content */}
           <div className="relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center text-white">
             <div className="max-w-5xl space-y-6 md:space-y-12">
               
-              {/* Category Badge */}
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in duration-1000' : 'opacity-0'}`}>
                 <span className="inline-flex items-center gap-2 py-1 px-4 md:px-6 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.2em] md:tracking-[0.4em] uppercase text-[8px] md:text-[10px] mb-2 md:mb-6 backdrop-blur-md rounded-full">
                   <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-ping" />
@@ -194,7 +214,6 @@ export default function ShowcasePage() {
                 </span>
               </div>
 
-              {/* Product Name */}
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in delay-200 duration-1000' : 'opacity-0'}`}>
                 <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-headline italic leading-none drop-shadow-2xl mb-4 text-white">
                   {product.name.split(' ').map((word, i) => (
@@ -203,7 +222,6 @@ export default function ShowcasePage() {
                 </h1>
               </div>
 
-              {/* Specs Grid */}
               <div className={cn(
                 "grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 border-l-2 border-primary/30 pl-6 md:pl-10 py-2 md:py-6",
                 activeSection === index ? 'animate-in slide-in-from-bottom fade-in delay-500 duration-1000' : 'opacity-0'
@@ -223,7 +241,6 @@ export default function ShowcasePage() {
                 </div>
               </div>
 
-              {/* Action Buttons: Buy and Inquire */}
               <div className={cn(
                 "flex flex-col sm:flex-row gap-4 md:gap-6 pt-6 md:pt-10",
                 activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'
@@ -235,7 +252,7 @@ export default function ShowcasePage() {
                 >
                   <Button 
                     onClick={() => handleAddToCart(product)}
-                    className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]"
+                    className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500"
                   >
                     <ShoppingBag className="mr-2 md:mr-3 h-4 md:h-5 w-4 md:w-5" /> Buy Piece
                   </Button>
@@ -255,7 +272,7 @@ export default function ShowcasePage() {
             </div>
           </div>
           
-          {/* Enhanced Scroll Indicator */}
+          {/* Scroll Indicator */}
           {index < PRODUCTS.length - 1 && (
             <div className={cn(
               "absolute bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4 transition-all duration-1000",
@@ -266,7 +283,7 @@ export default function ShowcasePage() {
             </div>
           )}
 
-          {/* Side Nav Dots - Hidden on Mobile */}
+          {/* Side Nav */}
           <div className="fixed right-4 md:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
             {PRODUCTS.map((_, i) => (
               <button
