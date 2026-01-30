@@ -1,4 +1,3 @@
-
 "use client"
 
 import Image from 'next/image';
@@ -9,6 +8,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
+import { useChat } from '@/context/chat-context';
 import { useToast } from '@/hooks/use-toast';
 import {
   Sheet,
@@ -62,6 +62,7 @@ const TypewriterEffect = ({ text, delay = 0, speed = 30, active = false }: { tex
 export default function Home() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
   const { startCall } = useVoiceCall();
+  const { openChat } = useChat();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
@@ -498,6 +499,17 @@ export default function Home() {
             />
           </button>
         ))}
+      </div>
+
+      {/* AI Stylist Floating Button */}
+      <div className="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-50">
+        <Button 
+          onClick={openChat}
+          className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary hover:bg-white hover:text-primary text-white shadow-2xl transition-all duration-500 flex items-center justify-center group"
+        >
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
+          <MessageCircle className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-110 transition-transform" />
+        </Button>
       </div>
 
       {/* Unified Help Overlay */}
