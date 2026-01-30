@@ -22,6 +22,7 @@ export default function Home() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   const groupedProducts = useMemo(() => {
@@ -32,6 +33,14 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Initializing active product indices for each category
+    const initialIndices: Record<number, number> = {};
+    groupedProducts.forEach((_, idx) => {
+      initialIndices[idx] = 0;
+    });
+    setActiveProductIndices(initialIndices);
+
+    // Category Observer (Vertical)
     const categoryObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -48,8 +57,32 @@ export default function Home() {
       categoryObserver.observe(section);
     });
 
-    return () => categoryObserver.disconnect();
-  }, []);
+    // Product Observer (Horizontal)
+    const productObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const catIndex = Number(entry.target.getAttribute('data-parent-category-index'));
+            const prodIndex = Number(entry.target.getAttribute('data-product-index'));
+            setActiveProductIndices(prev => ({
+              ...prev,
+              [catIndex]: prodIndex
+            }));
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    document.querySelectorAll('div[data-product-index]').forEach((div) => {
+      productObserver.observe(div);
+    });
+
+    return () => {
+      categoryObserver.disconnect();
+      productObserver.disconnect();
+    };
+  }, [groupedProducts]);
 
   const handleAddToCart = (product: any) => {
     addToCart({
@@ -91,17 +124,13 @@ export default function Home() {
         }
         @keyframes subtle-zoom {
           0% { transform: scale(1); }
-          100% { transform: scale(1.1); }
+          100% { transform: scale(1.08); }
         }
         .animate-subtle-zoom {
-          animation: subtle-zoom 15s infinite alternate ease-in-out;
+          animation: subtle-zoom 20s infinite alternate ease-in-out;
         }
-        @keyframes bounce-x {
-          0%, 100% { transform: translateX(0); }
-          50% { transform: translateX(10px); }
-        }
-        .animate-bounce-x {
-          animation: bounce-x 2s infinite ease-in-out;
+        .transition-content {
+          transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
       `}</style>
 
@@ -166,7 +195,6 @@ export default function Home() {
                             <button 
                               onClick={() => handleInquiry(item.name)}
                               className="text-white/40 hover:text-primary transition-colors p-1"
-                              title="Inquire about this piece"
                             >
                               <MessageCircle className="w-4 h-4" />
                             </button>
@@ -224,13 +252,6 @@ export default function Home() {
                   >
                     Complete Purchase <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleInquiry("the entire selection")}
-                    className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500 text-[10px] sm:text-xs md:text-sm"
-                  >
-                    Inquire About Bag <MessageCircle className="ml-2 w-4 h-4" />
-                  </Button>
                 </div>
                 
                 <div className="flex items-center justify-center gap-2 text-[8px] md:text-[10px] text-white/40 uppercase tracking-widest">
@@ -249,160 +270,133 @@ export default function Home() {
           data-category-index={categoryIndex}
           className="h-screen w-full snap-start relative flex overflow-x-scroll snap-x snap-mandatory hide-scrollbar bg-black"
         >
-          {group.products.map((product, productIndex) => (
-            <div 
-              key={product.id}
-              className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
-            >
-              {/* Product Visuals */}
-              <div className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/20 group/media">
-                {product.image && (
-                  <Image 
-                    src={product.image} 
-                    alt={product.name} 
-                    fill 
-                    priority={categoryIndex === 0 && productIndex === 0}
-                    className="object-cover animate-subtle-zoom"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black pointer-events-none" />
-                
-                {/* Visual Navigation Hint - Next Piece Arrow (Desktop) */}
-                {productIndex < group.products.length - 1 && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-4 z-20 group-hover/media:translate-x-0 translate-x-4 opacity-0 group-hover/media:opacity-100 transition-all duration-500">
-                    <span className="text-[10px] uppercase tracking-[0.5em] text-white font-bold rotate-90 whitespace-nowrap mb-6 origin-right">Next Design</span>
-                    <div className="w-10 h-10 flex items-center justify-center bg-primary/20 backdrop-blur-md rounded-full border border-primary/50 text-white hover:bg-primary transition-colors cursor-pointer animate-bounce-x">
-                      <ChevronRight className="w-6 h-6" />
-                    </div>
-                  </div>
-                )}
+          {group.products.map((product, productIndex) => {
+            const isVisible = activeCategoryIndex === categoryIndex && activeProductIndices[categoryIndex] === productIndex;
 
-                {/* Visual Navigation Hint - Prev Piece Arrow (Desktop) */}
-                {productIndex > 0 && (
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-4 z-20 group-hover/media:translate-x-0 -translate-x-4 opacity-0 group-hover/media:opacity-100 transition-all duration-500">
-                    <span className="text-[10px] uppercase tracking-[0.5em] text-white font-bold -rotate-90 whitespace-nowrap mb-6 origin-left">Previous</span>
-                    <div className="w-10 h-10 flex items-center justify-center bg-primary/20 backdrop-blur-md rounded-full border border-primary/50 text-white hover:bg-primary transition-colors cursor-pointer">
-                      <ChevronLeft className="w-6 h-6" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Product Info */}
-              <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black">
-                <div className="max-w-xl space-y-6 md:space-y-10">
+            return (
+              <div 
+                key={product.id}
+                data-parent-category-index={categoryIndex}
+                data-product-index={productIndex}
+                className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
+              >
+                {/* Product Visuals */}
+                <div className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media">
+                  {product.image && (
+                    <Image 
+                      src={product.image} 
+                      alt={product.name} 
+                      fill 
+                      priority={categoryIndex === 0 && productIndex === 0}
+                      className={cn(
+                        "object-cover transition-opacity duration-1000",
+                        isVisible ? "opacity-100 animate-subtle-zoom" : "opacity-0"
+                      )}
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black pointer-events-none" />
                   
-                  {/* Category Header */}
-                  <div className={cn(
-                    "transition-all duration-1000",
-                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
-                  )}>
-                    <div className="flex items-center gap-4 mb-2">
-                      <span className="inline-flex items-center gap-2 py-1 px-3 md:px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[8px] md:text-[10px] backdrop-blur-md rounded-full">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
-                        {group.name}
-                      </span>
-                      <div className="h-[1px] flex-1 bg-white/10" />
+                  {/* Desktop Nav Hints */}
+                  {productIndex < group.products.length - 1 && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-4 z-20 group-hover/media:translate-x-0 translate-x-4 opacity-0 group-hover/media:opacity-100 transition-all duration-500">
+                      <div className="w-10 h-10 flex items-center justify-center bg-primary/20 backdrop-blur-md rounded-full border border-primary/50 text-white hover:bg-primary transition-colors cursor-pointer animate-bounce">
+                        <ChevronRight className="w-6 h-6" />
+                      </div>
                     </div>
-                    <p className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Piece No. 0{productIndex + 1} / 0{group.products.length}</p>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Title */}
-                  <div className={cn(
-                    "transition-all duration-1000 delay-200",
-                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
-                  )}>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none drop-shadow-2xl mb-4">
-                      {product.name.split(' ').map((word, i) => (
-                        <span key={i} className="inline-block mr-3 md:mr-5 last:text-primary transition-colors hover:text-white">{word} </span>
-                      ))}
-                    </h1>
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className={cn(
-                    "grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 py-2 md:py-4 transition-all duration-1000 delay-500",
-                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                  )}>
-                    <div className="space-y-1 group cursor-default">
-                      <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Market Price</p>
-                      <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums">
-                        <span className="text-primary text-lg md:text-2xl mr-1">$</span>
-                        {product.price.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="space-y-1 group cursor-default">
-                      <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Materials</p>
-                      <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
-                        {product.materials}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className={cn(
-                    "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-all duration-1000 delay-700",
-                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                  )}>
-                    <Button 
-                      onClick={() => handleAddToCart(product)}
-                      className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-10 lg:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 shadow-[0_10px_20px_rgba(var(--primary),0.3)]"
-                    >
-                      <ShoppingBag className="mr-2 h-4 w-4" /> Add To Bag
-                    </Button>
+                {/* Product Info */}
+                <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black">
+                  <div className="max-w-xl space-y-6 md:space-y-10">
                     
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleInquiry(product.name)}
-                      className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-10 lg:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" /> Personal Inquiry
-                    </Button>
+                    {/* Category Header */}
+                    <div className={cn(
+                      "transition-content",
+                      isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+                    )}>
+                      <div className="flex items-center gap-4 mb-2">
+                        <span className="inline-flex items-center gap-2 py-1 px-3 md:px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[8px] md:text-[10px] backdrop-blur-md rounded-full">
+                          {group.name}
+                        </span>
+                        <div className="h-[1px] flex-1 bg-white/10" />
+                      </div>
+                      <p className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Piece 0{productIndex + 1} / 0{group.products.length}</p>
+                    </div>
+
+                    {/* Title */}
+                    <div className={cn(
+                      "transition-content delay-100",
+                      isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+                    )}>
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none">
+                        {product.name}
+                      </h1>
+                    </div>
+
+                    {/* Details Grid */}
+                    <div className={cn(
+                      "grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 transition-content delay-200",
+                      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                    )}>
+                      <div className="space-y-1">
+                        <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Market Price</p>
+                        <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums">
+                          <span className="text-primary text-lg md:text-2xl mr-1">$</span>
+                          {product.price.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Materials</p>
+                        <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
+                          {product.materials}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className={cn(
+                      "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300",
+                      isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                    )}>
+                      <Button 
+                        onClick={() => handleAddToCart(product)}
+                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      >
+                        <ShoppingBag className="mr-2 h-4 w-4" /> Add To Bag
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleInquiry(product.name)}
+                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" /> Inquiry
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Individual Product Progress Dot Bar (Mobile + Tablet) */}
-              <div className="absolute bottom-16 left-0 w-full flex justify-center lg:hidden gap-1.5 z-40 px-6">
-                {group.products.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={cn(
-                      "h-1 transition-all duration-500 rounded-full",
-                      productIndex === i ? "w-8 bg-primary" : "w-3 bg-white/20"
-                    )} 
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* Bottom Desktop Navigation Indicator - Horizontal Progress */}
-          <div className="absolute bottom-8 left-8 hidden lg:flex flex-col gap-3 z-40">
-             <div className="flex items-center gap-4">
-                <div className="flex gap-2">
+                {/* Progress Dot Bar (Mobile) */}
+                <div className="absolute bottom-16 left-0 w-full flex justify-center lg:hidden gap-1.5 z-40 px-6">
                   {group.products.map((_, i) => (
                     <div 
                       key={i} 
                       className={cn(
-                        "h-1.5 transition-all duration-700 rounded-full shadow-sm", 
-                        activeCategoryIndex === categoryIndex ? "bg-white/10" : "bg-white/5"
+                        "h-1 transition-all duration-500 rounded-full",
+                        productIndex === i ? "w-8 bg-primary" : "w-3 bg-white/20"
                       )} 
-                      style={{ width: '40px' }}
                     />
                   ))}
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-white/50 font-bold">Category Piece Registry</span>
-                  <span className="text-[8px] uppercase tracking-[0.1em] text-primary/60 font-medium">Swipe Horizontally to Explore</span>
-                </div>
-             </div>
-          </div>
+              </div>
+            );
+          })}
         </section>
       ))}
 
-      {/* Vertical Navigation Bullets (Desktop) */}
+      {/* Side Nav Dots */}
       <div className="fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
         {groupedProducts.map((group, i) => (
           <button
@@ -410,9 +404,8 @@ export default function Home() {
             onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
             className="group relative flex items-center justify-end"
           >
-            <div className="absolute right-12 flex flex-col items-end opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-500 pointer-events-none">
+            <div className="absolute right-12 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
               <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">{group.name}</span>
-              <span className="text-[8px] uppercase tracking-widest text-white/40">Scroll to Explore</span>
             </div>
             <div 
               className={cn(
@@ -424,32 +417,20 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Interaction Help Overlay - Adaptive */}
-      <div className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 md:gap-12 text-white/40 z-40 pointer-events-none px-6 w-full justify-center backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/10">
-        
-        {/* Horizontal Swipe Indicator */}
-        <div className="flex items-center gap-3">
+      {/* Unified Help Overlay */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/40 z-40 pointer-events-none px-6 backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/20">
+        <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3 text-primary animate-pulse" />
-          <div className="flex flex-col items-center">
-            <span className="text-[7px] md:text-[9px] uppercase tracking-[0.3em] font-bold whitespace-nowrap text-white">Swipe Pieces</span>
-            <span className="text-[6px] md:text-[7px] uppercase tracking-widest text-white/30 hidden sm:block">Horizontal Swipe</span>
-          </div>
+          <span className="text-[7px] md:text-[9px] uppercase tracking-[0.2em] font-bold text-white">Swipe Designs</span>
           <ChevronRight className="w-3 h-3 text-primary animate-pulse" />
         </div>
-
-        <div className="w-px h-6 bg-white/20" />
-
-        {/* Vertical Scroll Indicator */}
-        <div className="flex items-center gap-3">
-          <div className="flex flex-col items-center">
-            <span className="text-[7px] md:text-[9px] uppercase tracking-[0.3em] font-bold whitespace-nowrap text-white">Scroll Collections</span>
-            <span className="text-[6px] md:text-[7px] uppercase tracking-widest text-white/30 hidden sm:block">Vertical Scroll</span>
-          </div>
-          <div className="flex flex-col gap-1 items-center">
-            <ChevronDown className="w-4 h-4 text-primary animate-bounce" />
-          </div>
+        <div className="w-px h-4 bg-white/20" />
+        <div className="flex items-center gap-2">
+          <span className="text-[7px] md:text-[9px] uppercase tracking-[0.2em] font-bold text-white">Explore Categories</span>
+          <ChevronDown className="w-4 h-4 text-primary animate-bounce" />
         </div>
       </div>
     </div>
   );
 }
+
