@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { PRODUCTS, CATEGORIES } from '@/lib/products';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -18,11 +18,19 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+interface SparkleEffect {
+  id: number;
+  x: number;
+  y: number;
+}
+
 export default function Home() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
+  const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
+  const [isZoomed, setIsZoomed] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
 
   const groupedProducts = useMemo(() => {
@@ -33,14 +41,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Initializing active product indices for each category
     const initialIndices: Record<number, number> = {};
     groupedProducts.forEach((_, idx) => {
       initialIndices[idx] = 0;
     });
     setActiveProductIndices(initialIndices);
 
-    // Category Observer (Vertical)
     const categoryObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -57,7 +63,6 @@ export default function Home() {
       categoryObserver.observe(section);
     });
 
-    // Product Observer (Horizontal)
     const productObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -112,6 +117,22 @@ export default function Home() {
     clearCart();
   };
 
+  const handleImageInteraction = (e: React.MouseEvent<HTMLDivElement>, productId: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const newSparkle = { id: Date.now(), x, y };
+    setSparkles(prev => [...prev, newSparkle]);
+    
+    // Toggle zoom
+    setIsZoomed(prev => ({ ...prev, [productId]: !prev[productId] }));
+
+    setTimeout(() => {
+      setSparkles(prev => prev.filter(s => s.id !== newSparkle.id));
+    }, 1000);
+  };
+
   return (
     <div ref={containerRef} className="h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white">
       <style jsx global>{`
@@ -121,6 +142,14 @@ export default function Home() {
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        @keyframes sparkle-anim {
+          0% { transform: scale(0) rotate(0deg); opacity: 1; }
+          50% { transform: scale(1.5) rotate(180deg); opacity: 0.8; }
+          100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+        .animate-magic-sparkle {
+          animation: sparkle-anim 0.8s ease-out forwards;
         }
         @keyframes subtle-zoom {
           0% { transform: scale(1); }
@@ -272,6 +301,7 @@ export default function Home() {
         >
           {group.products.map((product, productIndex) => {
             const isVisible = activeCategoryIndex === categoryIndex && activeProductIndices[categoryIndex] === productIndex;
+            const zoomed = isZoomed[product.id];
 
             return (
               <div 
@@ -281,7 +311,10 @@ export default function Home() {
                 className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
               >
                 {/* Product Visuals */}
-                <div className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media">
+                <div 
+                  onClick={(e) => handleImageInteraction(e, product.id)}
+                  className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media cursor-crosshair"
+                >
                   {product.image && (
                     <Image 
                       src={product.image} 
@@ -289,14 +322,38 @@ export default function Home() {
                       fill 
                       priority={categoryIndex === 0 && productIndex === 0}
                       className={cn(
-                        "object-cover transition-opacity duration-1000",
-                        isVisible ? "opacity-100 animate-subtle-zoom" : "opacity-0"
+                        "object-cover transition-all duration-1000",
+                        isVisible ? "opacity-100" : "opacity-0",
+                        isVisible && !zoomed ? "animate-subtle-zoom" : "",
+                        zoomed ? "scale-125 brightness-110" : "scale-100"
                       )}
                       sizes="(max-width: 1024px) 100vw, 50vw"
                     />
                   )}
+                  
+                  {/* Magic Sparkles */}
+                  {sparkles.map(sparkle => (
+                    <div 
+                      key={sparkle.id} 
+                      className="absolute z-50 pointer-events-none animate-magic-sparkle"
+                      style={{ left: sparkle.x, top: sparkle.y }}
+                    >
+                      <Sparkles className="text-primary w-6 h-6 -translate-x-1/2 -translate-y-1/2" />
+                    </div>
+                  ))}
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black pointer-events-none" />
                   
+                  {/* Tap Hint */}
+                  {isVisible && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none">
+                      <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 flex items-center gap-2">
+                        <MousePointer2 className="w-3 h-3 text-primary animate-pulse" />
+                        <span className="text-[8px] uppercase tracking-widest font-bold text-white">Tap to Explore Detail</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Desktop Nav Hints */}
                   {productIndex < group.products.length - 1 && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-4 z-20 group-hover/media:translate-x-0 translate-x-4 opacity-0 group-hover/media:opacity-100 transition-all duration-500">
@@ -433,4 +490,3 @@ export default function Home() {
     </div>
   );
 }
-
