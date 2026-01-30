@@ -2,9 +2,8 @@
 "use client"
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { PRODUCTS, CATEGORIES } from '@/lib/products';
-import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -20,7 +19,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Home() {
-  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount, clearCart } = useCart();
   const { toast } = useToast();
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
 
@@ -69,6 +68,14 @@ export default function Home() {
       title: "Inquiry Sent",
       description: `A personal stylist will contact you regarding ${productName} shortly.`,
     });
+  };
+
+  const handlePurchase = () => {
+    toast({
+      title: "Order Placed",
+      description: "Thank you for your purchase! Our team will process your order immediately.",
+    });
+    clearCart();
   };
 
   return (
@@ -193,11 +200,12 @@ export default function Home() {
                 </div>
                 
                 <div className="grid grid-cols-1 gap-3">
-                  <Link href="/checkout" className="block w-full">
-                    <Button className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500">
-                      Purchase Now <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                  <Button 
+                    onClick={handlePurchase}
+                    className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500"
+                  >
+                    Complete Purchase <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => handleInquiry("the entire selection")}
@@ -214,16 +222,6 @@ export default function Home() {
             )}
           </SheetContent>
         </Sheet>
-
-        <Link href="/shop">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500 group"
-          >
-            <Sparkles className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-500" />
-          </Button>
-        </Link>
       </div>
 
       {/* Brand Logo */}
@@ -355,7 +353,7 @@ export default function Home() {
                     <div key={i} className={cn("h-1 w-8 transition-colors duration-500", "bg-white/10")} />
                   ))}
                 </div>
-                <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">Category Explore</span>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">Explore Favourites</span>
              </div>
           </div>
         </section>
@@ -389,12 +387,12 @@ export default function Home() {
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-12 text-white/30 z-40 pointer-events-none">
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3" />
-          <span className="text-[8px] uppercase tracking-widest font-bold">Swipe Products</span>
+          <span className="text-[8px] uppercase tracking-widest font-bold">Swipe Pieces</span>
           <ChevronRight className="w-3 h-3" />
         </div>
         <div className="w-px h-4 bg-white/20" />
         <div className="flex flex-col items-center gap-1">
-          <span className="text-[8px] uppercase tracking-widest font-bold">Scroll Categories</span>
+          <span className="text-[8px] uppercase tracking-widest font-bold">Scroll Collections</span>
           <div className="h-4 w-[1px] bg-white/20 animate-bounce" />
         </div>
       </div>
