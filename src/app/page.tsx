@@ -1,9 +1,8 @@
-
 "use client"
 
 import Image from 'next/image';
 import { PRODUCTS, CATEGORIES } from '@/lib/products';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2 } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, X, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -17,6 +16,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { productVoiceInquiry } from '@/ai/flows/product-voice-inquiry-flow';
 
 interface SparkleEffect {
   id: number;
@@ -64,6 +64,11 @@ export default function Home() {
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
   const [isZoomed, setIsZoomed] = useState<Record<string, boolean>>({});
+  const [isCalling, setIsCalling] = useState(false);
+  const [isCallConnecting, setIsCallConnecting] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const groupedProducts = useMemo(() => {
@@ -142,6 +147,38 @@ export default function Home() {
     });
   };
 
+  const handleVoiceCall = async (product: any) => {
+    setIsCalling(true);
+    setIsCallConnecting(true);
+    setAudioUrl(null);
+
+    try {
+      const response = await productVoiceInquiry({
+        productName: product.name,
+        productMaterials: product.materials,
+      });
+      setAudioUrl(response.audioUri);
+      setIsCallConnecting(false);
+    } catch (error) {
+      console.error('Call failed:', error);
+      setIsCalling(false);
+      toast({
+        variant: "destructive",
+        title: "Connection Failed",
+        description: "Could not connect to the stylist. Please try again later.",
+      });
+    }
+  };
+
+  const endCall = () => {
+    setIsCalling(false);
+    setIsCallConnecting(false);
+    setAudioUrl(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+
   const handlePurchase = () => {
     toast({
       title: "Order Placed",
@@ -193,6 +230,13 @@ export default function Home() {
         .transition-content {
           transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
+        @keyframes pulse-ring {
+          0% { transform: scale(0.8); opacity: 0.5; }
+          100% { transform: scale(2.4); opacity: 0; }
+        }
+        .animate-pulse-ring {
+          animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
       `}</style>
 
       {/* Brand Logo */}
@@ -201,7 +245,7 @@ export default function Home() {
           <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45 shadow-[0_0_15px_rgba(var(--primary),0.5)]">
             <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
           </div>
-          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter drop-shadow-lg">LuxeFinds</h2>
+          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter drop-shadow-lg text-primary">LuxeFinds</h2>
         </div>
       </div>
 
@@ -309,7 +353,7 @@ export default function Home() {
                 <div className="grid grid-cols-1 gap-2 md:gap-3">
                   <Button 
                     onClick={handlePurchase}
-                    className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm"
+                    className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm box-border"
                   >
                     Complete Purchase <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -323,6 +367,56 @@ export default function Home() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Voice Call Overlay */}
+      {isCalling && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <div className="relative mb-12">
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />
+            <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-primary/50 flex items-center justify-center bg-black">
+              <Sparkles className="w-12 h-12 md:w-20 md:h-20 text-primary animate-pulse" />
+            </div>
+          </div>
+          
+          <div className="text-center space-y-4 mb-20 px-6">
+            <h3 className="text-2xl md:text-4xl font-headline italic text-white">Luxe Stylist</h3>
+            <p className="text-primary font-bold uppercase tracking-[0.3em] text-[10px] md:text-xs">
+              {isCallConnecting ? "Establishing Secure Line..." : "On Call - Live Consultation"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-8 md:gap-12">
+            <Button 
+              onClick={() => setIsMuted(!isMuted)}
+              variant="outline" 
+              size="icon" 
+              className="w-14 h-14 md:w-20 md:h-20 rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white"
+            >
+              {isMuted ? <VolumeX className="w-6 h-6 md:w-8 md:h-8" /> : <Volume2 className="w-6 h-6 md:w-8 md:h-8" />}
+            </Button>
+            
+            <Button 
+              onClick={endCall}
+              variant="destructive" 
+              size="icon" 
+              className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-red-500 hover:bg-red-600 shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+            >
+              <Phone className="w-8 h-8 md:w-12 md:h-12 rotate-[135deg]" />
+            </Button>
+          </div>
+
+          {audioUrl && (
+            <audio 
+              ref={audioRef}
+              autoPlay 
+              muted={isMuted}
+              onEnded={endCall}
+              src={audioUrl}
+              className="hidden"
+            />
+          )}
+        </div>
+      )}
 
       {/* Main Sections */}
       {groupedProducts.map((group, categoryIndex) => (
@@ -446,12 +540,12 @@ export default function Home() {
 
                     {/* Actions */}
                     <div className={cn(
-                      "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
+                      "flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
                       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     )}>
                       <Button 
                         onClick={() => handleAddToCart(product)}
-                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                        className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
                       >
                         <ShoppingBag className="mr-2 h-4 w-4" /> Add To Bag
                       </Button>
@@ -459,9 +553,16 @@ export default function Home() {
                       <Button 
                         variant="outline" 
                         onClick={() => handleInquiry(product.name)}
-                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                        className="flex-1 min-w-[140px] bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
                       >
                         <MessageCircle className="mr-2 h-4 w-4" /> Inquiry
+                      </Button>
+
+                      <Button 
+                        onClick={() => handleVoiceCall(product)}
+                        className="w-full sm:w-auto bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                      >
+                        <Phone className="mr-2 h-4 w-4" /> Voice Stylist
                       </Button>
                     </div>
                   </div>
