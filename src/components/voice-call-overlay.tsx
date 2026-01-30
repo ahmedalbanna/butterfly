@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useVoiceCall } from '@/context/voice-call-context';
@@ -30,10 +31,10 @@ export function VoiceCallOverlay() {
 
   if (!isCalling) return null;
 
-  // وضع التصغير (الفقاعة العائمة)
+  // وضع التصغير (الفقاعة العائمة) - تم تحديث الموقع لتجنب التداخل مع المحادثة
   if (isMinimized) {
     return (
-      <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-bottom-10 duration-500">
+      <div className="fixed bottom-6 right-24 md:bottom-12 md:right-32 z-[100] animate-in slide-in-from-bottom-10 duration-500">
         <div className="relative group">
           <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
           <button 

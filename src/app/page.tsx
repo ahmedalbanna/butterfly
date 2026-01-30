@@ -1,3 +1,4 @@
+
 "use client"
 
 import Image from 'next/image';
@@ -502,7 +503,7 @@ export default function Home() {
       </div>
 
       {/* AI Stylist Floating Button */}
-      <div className="fixed bottom-24 right-6 md:bottom-12 md:right-12 z-50">
+      <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-50">
         <Button 
           onClick={openChat}
           className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary hover:bg-white hover:text-primary text-white shadow-2xl transition-all duration-500 flex items-center justify-center group"
