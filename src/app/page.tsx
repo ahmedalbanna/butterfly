@@ -97,15 +97,25 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Floating Header UI */}
-      <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
+      {/* Brand Logo - Responsive positioning */}
+      <div className="fixed top-4 left-4 md:top-8 md:left-12 z-50">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45">
+            <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
+          </div>
+          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter">LuxeFinds</h2>
+        </div>
+      </div>
+
+      {/* Floating Cart UI - Responsive sizes */}
+      <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
             <div className="relative">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500"
+                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500"
               >
                 <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
                 {cartCount > 0 && (
@@ -117,23 +127,23 @@ export default function Home() {
             </div>
           </SheetTrigger>
           <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
-            <SheetHeader className="p-8 border-b border-white/10">
-              <SheetTitle className="text-3xl font-headline italic text-white flex items-center gap-3">
+            <SheetHeader className="p-6 md:p-8 border-b border-white/10">
+              <SheetTitle className="text-2xl md:text-3xl font-headline italic text-white flex items-center gap-3">
                 <ShoppingBag className="text-primary" /> Your Selection
               </SheetTitle>
             </SheetHeader>
             
-            <ScrollArea className="flex-1 px-8 py-6">
+            <ScrollArea className="flex-1 px-6 md:px-8 py-6">
               {cart.length === 0 ? (
                 <div className="h-[40vh] flex flex-col items-center justify-center space-y-4 opacity-50">
                   <ShoppingBag className="w-12 h-12" />
-                  <p className="font-body italic text-lg text-center">Your shopping bag is waiting for its first treasure.</p>
+                  <p className="font-body italic text-lg text-center px-4">Your shopping bag is waiting for its first treasure.</p>
                 </div>
               ) : (
-                <div className="space-y-10">
+                <div className="space-y-8 md:space-y-10">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex gap-6 group">
-                      <div className="relative w-24 h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
+                    <div key={item.id} className="flex gap-4 md:gap-6 group">
+                      <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
                         {item.image && (
                           <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
                         )}
@@ -141,10 +151,10 @@ export default function Home() {
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div className="flex justify-between items-start gap-2">
                           <div className="space-y-1">
-                            <h4 className="font-headline text-xl leading-tight group-hover:text-primary transition-colors">{item.name}</h4>
+                            <h4 className="font-headline text-lg md:text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.name}</h4>
                             <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1 md:gap-2">
                             <button 
                               onClick={() => handleInquiry(item.name)}
                               className="text-white/40 hover:text-primary transition-colors p-1"
@@ -160,7 +170,7 @@ export default function Home() {
                             </button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center justify-between mt-2 md:mt-4">
                           <div className="flex items-center border border-white/10 rounded-none bg-white/5">
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -177,7 +187,7 @@ export default function Home() {
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
-                          <p className="font-bold text-primary">${(item.price * item.quantity).toLocaleString()}</p>
+                          <p className="font-bold text-primary text-sm md:text-base">${(item.price * item.quantity).toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
@@ -187,35 +197,35 @@ export default function Home() {
             </ScrollArea>
 
             {cart.length > 0 && (
-              <div className="p-8 bg-white/5 border-t border-white/10 space-y-6">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm text-white/60">
-                    <span className="uppercase tracking-widest text-[10px]">Estimated Subtotal</span>
+              <div className="p-6 md:p-8 bg-white/5 border-t border-white/10 space-y-4 md:space-y-6">
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex justify-between text-[10px] md:text-xs text-white/60 uppercase tracking-widest">
+                    <span>Estimated Subtotal</span>
                     <span>${cartTotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-2xl font-headline font-bold">
+                  <div className="flex justify-between text-xl md:text-2xl font-headline font-bold">
                     <span className="italic">Total</span>
                     <span className="text-primary">${cartTotal.toLocaleString()}</span>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2 md:gap-3">
                   <Button 
                     onClick={handlePurchase}
-                    className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500"
+                    className="w-full h-12 md:h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-xs md:text-sm"
                   >
                     Complete Purchase <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => handleInquiry("the entire selection")}
-                    className="w-full h-14 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500"
+                    className="w-full h-12 md:h-14 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500 text-xs md:text-sm"
                   >
                     Inquire About Bag <MessageCircle className="ml-2 w-4 h-4" />
                   </Button>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 uppercase tracking-widest">
+                <div className="flex items-center justify-center gap-2 text-[8px] md:text-[10px] text-white/40 uppercase tracking-widest">
                   <ShieldCheck className="w-3 h-3" /> Secure & Private Checkout
                 </div>
               </div>
@@ -224,17 +234,7 @@ export default function Home() {
         </Sheet>
       </div>
 
-      {/* Brand Logo */}
-      <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50">
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45">
-            <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
-          </div>
-          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter">LuxeFinds</h2>
-        </div>
-      </div>
-
-      {/* Sections Map */}
+      {/* Main 2D Navigation Sections */}
       {groupedProducts.map((group, categoryIndex) => (
         <section 
           key={group.name} 
@@ -246,8 +246,8 @@ export default function Home() {
               key={product.id}
               className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
             >
-              {/* Product Visuals */}
-              <div className="w-full lg:w-1/2 h-[45vh] lg:h-full relative overflow-hidden bg-muted/20">
+              {/* Product Visuals - Full on mobile top, half on desktop */}
+              <div className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/20">
                 {product.image && (
                   <Image 
                     src={product.image} 
@@ -255,11 +255,12 @@ export default function Home() {
                     fill 
                     priority={categoryIndex === 0 && productIndex === 0}
                     className="object-cover animate-subtle-zoom"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                   />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black pointer-events-none" />
                 
-                {/* Horizontal Swipe Indicator */}
+                {/* Horizontal Swipe Indicator - Visible on Desktop only */}
                 {productIndex < group.products.length - 1 && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-2 opacity-40">
                     <span className="text-[8px] uppercase tracking-[0.4em] text-white font-bold rotate-90 mb-8">Next Piece</span>
@@ -268,92 +269,88 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Product Info */}
-              <div className="w-full lg:w-1/2 h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 text-white bg-black">
+              {/* Product Info - Better spacing for mobile */}
+              <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black">
                 <div className="max-w-xl space-y-6 md:space-y-10">
                   
-                  {/* Category Badge */}
+                  {/* Category Badge & Progress */}
                   <div className={cn(
                     "transition-all duration-1000",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                   )}>
-                    <span className="inline-flex items-center gap-2 py-1 px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[10px] mb-2 backdrop-blur-md rounded-full">
+                    <span className="inline-flex items-center gap-2 py-1 px-3 md:px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[8px] md:text-[10px] mb-2 backdrop-blur-md rounded-full">
                       <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
                       {group.name}
                     </span>
                     <p className="text-[8px] text-white/40 uppercase tracking-widest mt-1 ml-4">Piece {productIndex + 1} of {group.products.length}</p>
                   </div>
 
-                  {/* Product Title */}
+                  {/* Product Title - Responsive font size */}
                   <div className={cn(
                     "transition-all duration-1000 delay-200",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                   )}>
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-headline italic leading-none drop-shadow-2xl mb-4">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none drop-shadow-2xl mb-4">
                       {product.name.split(' ').map((word, i) => (
                         <span key={i} className="inline-block mr-3 md:mr-5 last:text-primary">{word} </span>
                       ))}
                     </h1>
                   </div>
 
-                  {/* Pricing and Details */}
+                  {/* Pricing and Details Grid */}
                   <div className={cn(
-                    "grid grid-cols-2 gap-8 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 py-2 md:py-4 transition-all duration-1000 delay-500",
+                    "grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 py-2 md:py-4 transition-all duration-1000 delay-500",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                   )}>
                     <div className="space-y-1 group cursor-default">
-                      <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Exclusive Price</p>
-                      <p className="text-3xl md:text-5xl font-body font-light tabular-nums">
-                        <span className="text-primary text-xl md:text-2xl mr-1">$</span>
+                      <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Exclusive Price</p>
+                      <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums">
+                        <span className="text-primary text-lg md:text-2xl mr-1">$</span>
                         {product.price.toLocaleString()}
                       </p>
                     </div>
                     <div className="space-y-1 group cursor-default">
-                      <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Composition</p>
-                      <p className="text-xs md:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
+                      <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Composition</p>
+                      <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
                         {product.materials}
                       </p>
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Action Buttons - Stack on small screens */}
                   <div className={cn(
-                    "flex flex-col sm:flex-row gap-4 pt-6 md:pt-8 transition-all duration-1000 delay-700",
+                    "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-all duration-1000 delay-700",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                   )}>
-                    <div className="w-full sm:w-auto">
-                      <Button 
-                        onClick={() => handleAddToCart(product)}
-                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
-                      >
-                        <ShoppingBag className="mr-2 h-4 w-4" /> Buy Piece
-                      </Button>
-                    </div>
+                    <Button 
+                      onClick={() => handleAddToCart(product)}
+                      className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-12 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                    >
+                      <ShoppingBag className="mr-2 h-4 w-4" /> Buy Piece
+                    </Button>
                     
-                    <div className="w-full sm:w-auto">
-                      <Button 
-                        variant="outline" 
-                        onClick={() => handleInquiry(product.name)}
-                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4" /> Inquire Now
-                      </Button>
-                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handleInquiry(product.name)}
+                      className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-12 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" /> Inquire Now
+                    </Button>
                   </div>
                 </div>
               </div>
             </div>
           ))}
 
-          {/* Bottom Indicators per Category */}
-          <div className="absolute bottom-8 left-8 hidden lg:flex flex-col gap-2 z-40">
+          {/* Bottom Desktop Navigation Indicator */}
+          <div className="absolute bottom-8 left-8 hidden xl:flex flex-col gap-2 z-40">
              <div className="flex items-center gap-4">
                 <div className="flex gap-1">
                   {group.products.map((_, i) => (
                     <div key={i} className={cn("h-1 w-8 transition-colors duration-500", "bg-white/10")} />
                   ))}
                 </div>
-                <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">Explore Favourites</span>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">Explore Piece Registry</span>
              </div>
           </div>
         </section>
@@ -383,17 +380,17 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Scroll Help Icons */}
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-12 text-white/30 z-40 pointer-events-none">
+      {/* Help Icons - Adaptive Visibility */}
+      <div className="fixed bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 md:gap-12 text-white/30 z-40 pointer-events-none px-4 w-full justify-center">
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3" />
-          <span className="text-[8px] uppercase tracking-widest font-bold">Swipe Pieces</span>
+          <span className="text-[7px] md:text-[8px] uppercase tracking-widest font-bold whitespace-nowrap">Swipe Pieces</span>
           <ChevronRight className="w-3 h-3" />
         </div>
         <div className="w-px h-4 bg-white/20" />
         <div className="flex flex-col items-center gap-1">
-          <span className="text-[8px] uppercase tracking-widest font-bold">Scroll Collections</span>
-          <div className="h-4 w-[1px] bg-white/20 animate-bounce" />
+          <span className="text-[7px] md:text-[8px] uppercase tracking-widest font-bold whitespace-nowrap">Scroll Collections</span>
+          <div className="h-3 md:h-4 w-[1px] bg-white/20 animate-bounce" />
         </div>
       </div>
     </div>
