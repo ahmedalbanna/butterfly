@@ -385,7 +385,7 @@ export default function Home() {
 
                 {/* Product Info */}
                 <div className="w-full lg:w-1/2 h-[60vh] md:h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 xl:px-32 text-white bg-black box-border overflow-hidden">
-                  <div className="max-w-xl w-full space-y-6 md:space-y-10 box-border">
+                  <div className="max-w-xl w-full space-y-6 md:space-y-10 box-border overflow-hidden">
                     
                     {/* Category Header */}
                     <div className={cn(
@@ -401,61 +401,61 @@ export default function Home() {
                       <p className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Piece 0{productIndex + 1} / 0{group.products.length}</p>
                     </div>
 
-                    {/* Title with Typewriter */}
+                    {/* Title with Typewriter & Clipping */}
                     <div className={cn(
                       "transition-content delay-100",
                       isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                     )}>
-                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none min-h-[1.2em]">
+                      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-headline italic leading-tight md:leading-none min-h-[1.2em] line-clamp-2 overflow-hidden">
                         <TypewriterEffect text={product.name} active={isVisible} speed={50} />
                       </h1>
                     </div>
 
-                    {/* Details Grid */}
+                    {/* Details Grid with Fixed Spacing */}
                     <div className={cn(
                       "grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 transition-content delay-200",
                       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     )}>
-                      <div className="space-y-1">
+                      <div className="space-y-1 overflow-hidden">
                         <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Market Price</p>
-                        <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums">
+                        <p className="text-2xl md:text-4xl lg:text-5xl font-body font-light tabular-nums truncate">
                           <span className="text-primary text-lg md:text-2xl mr-1">$</span>
                           <TypewriterEffect text={product.price.toLocaleString()} active={isVisible} speed={40} delay={600} />
                         </p>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1 overflow-hidden">
                         <p className="text-[8px] md:text-[9px] uppercase tracking-[0.3em] text-primary font-bold">Materials</p>
-                        <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed min-h-[3em]">
+                        <p className="text-xs md:text-base lg:text-lg italic font-body text-white/80 leading-relaxed min-h-[3em] line-clamp-2 overflow-hidden">
                           <TypewriterEffect text={product.materials} active={isVisible} speed={25} delay={1000} />
                         </p>
                       </div>
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions with Clipping Safety */}
                     <div className={cn(
                       "flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
                       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     )}>
                       <Button 
                         onClick={() => handleAddToCart(product)}
-                        className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                        className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
-                        <ShoppingBag className="mr-2 h-4 w-4" /> Add To Bag
+                        <ShoppingBag className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Add To Bag</span>
                       </Button>
                       
                       <Button 
                         variant="outline" 
                         onClick={() => handleInquiry(product.name)}
-                        className="flex-1 min-w-[140px] bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                        className="flex-1 min-w-[140px] bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
-                        <MessageCircle className="mr-2 h-4 w-4" /> Inquiry
+                        <MessageCircle className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Inquiry</span>
                       </Button>
 
                       <Button 
                         onClick={() => startCall({ name: product.name, materials: product.materials })}
-                        className="w-full sm:w-auto bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border"
+                        className="w-full sm:w-auto bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
-                        <Phone className="mr-2 h-4 w-4" /> Voice Stylist
+                        <Phone className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Voice Stylist</span>
                       </Button>
                     </div>
                   </div>
@@ -516,4 +516,3 @@ export default function Home() {
     </div>
   );
 }
-
