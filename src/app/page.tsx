@@ -212,14 +212,14 @@ export default function Home() {
                 <div className="grid grid-cols-1 gap-2 md:gap-3">
                   <Button 
                     onClick={handlePurchase}
-                    className="w-full h-12 md:h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-xs md:text-sm"
+                    className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm"
                   >
                     Complete Purchase <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                   <Button 
                     variant="outline" 
                     onClick={() => handleInquiry("the entire selection")}
-                    className="w-full h-12 md:h-14 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500 text-xs md:text-sm"
+                    className="w-full h-11 sm:h-12 md:h-14 lg:h-16 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500 text-[10px] sm:text-xs md:text-sm"
                   >
                     Inquire About Bag <MessageCircle className="ml-2 w-4 h-4" />
                   </Button>
@@ -317,14 +317,14 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Action Buttons - Stack on small screens */}
+                  {/* Action Buttons - Fully Adaptive Sizing */}
                   <div className={cn(
                     "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-all duration-1000 delay-700",
                     activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                   )}>
                     <Button 
                       onClick={() => handleAddToCart(product)}
-                      className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-12 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 sm:px-8 md:px-10 lg:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
                     >
                       <ShoppingBag className="mr-2 h-4 w-4" /> Buy Piece
                     </Button>
@@ -332,7 +332,7 @@ export default function Home() {
                     <Button 
                       variant="outline" 
                       onClick={() => handleInquiry(product.name)}
-                      className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-12 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 sm:px-8 md:px-10 lg:px-12 h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
                     >
                       <MessageCircle className="mr-2 h-4 w-4" /> Inquire Now
                     </Button>
