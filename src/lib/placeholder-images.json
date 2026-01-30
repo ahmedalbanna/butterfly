@@ -1,3 +1,70 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "jewelry-1",
+      "description": "Rose Gold Diamond Necklace",
+      "imageUrl": "https://images.unsplash.com/photo-1724937721228-f7bf3df2a4d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxkaWFtb25kJTIwbmVja2xhY2V8ZW58MHx8fHwxNzY5NzQ5MjIyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "diamond necklace"
+    },
+    {
+      "id": "jewelry-1-alt",
+      "description": "Rose Gold Diamond Necklace Angle",
+      "imageUrl": "https://images.unsplash.com/photo-1758995116288-278d7387cbb6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8amV3ZWxyeSUyMGRldGFpbHxlbnwwfHx8fDE3Njk3ODkyOTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "jewelry detail"
+    },
+    {
+      "id": "jewelry-2",
+      "description": "Minimalist Gold Hoop Earrings",
+      "imageUrl": "https://images.unsplash.com/photo-1671644730555-916aa8d8157f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxnb2xkJTIwZWFycmluZ3N8ZW58MHx8fHwxNzY5NzEwNzA5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gold earrings"
+    },
+    {
+      "id": "jewelry-2-alt",
+      "description": "Minimalist Gold Hoop Earrings Detail",
+      "imageUrl": "https://images.unsplash.com/photo-1751551683594-ab054a031696?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxlYXJyaW5ncyUyMGNsb3NlfGVufDB8fHx8MTc2OTc4OTI5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "earrings close"
+    },
+    {
+      "id": "jewelry-3",
+      "description": "Classic Pearl Bracelet",
+      "imageUrl": "https://images.unsplash.com/photo-1704203355458-b36cb43eacf8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwZWFybCUyMGJyYWNlbGV0fGVufDB8fHx8MTc2OTY4NDQ3Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pearl bracelet"
+    },
+    {
+      "id": "watch-1",
+      "description": "Elegant Rose Gold Watch",
+      "imageUrl": "https://images.unsplash.com/photo-1548169874-53e85f753f1e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxsdXh1cnklMjB3YXRjaHxlbnwwfHx8fDE3Njk3MzA4NDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury watch"
+    },
+    {
+      "id": "bag-1",
+      "description": "Sleek Leather Clutch",
+      "imageUrl": "https://images.unsplash.com/photo-1644308992821-6feb6375c89b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxsZWF0aGVyJTIwY2x1dGNofGVufDB8fHx8MTc2OTc4OTI5M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "leather clutch"
+    },
+    {
+      "id": "sunglasses-1",
+      "description": "Designer Tortoise Sunglasses",
+      "imageUrl": "https://images.unsplash.com/photo-1760446032732-c042b0d43580?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxmYXNoaW9uJTIwc3VuZ2xhc3Nlc3xlbnwwfHx8fDE3Njk3ODkyOTN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "fashion sunglasses"
+    },
+    {
+      "id": "scarf-1",
+      "description": "Silk Floral Scarf",
+      "imageUrl": "https://images.unsplash.com/photo-1517472292914-9570a594783b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzaWxrJTIwc2NhcmZ8ZW58MHx8fHwxNzY5NzUzNDMwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "silk scarf"
+    },
+    {
+      "id": "jewelry-4",
+      "description": "Emerald Cut Engagement Ring",
+      "imageUrl": "https://images.unsplash.com/photo-1719924998065-0c60e329ef58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxkaWFtb25kJTIwcmluZ3xlbnwwfHx8fDE3Njk3NzE4NjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "diamond ring"
+    },
+    {
+      "id": "hero-image",
+      "description": "Elegant accessory collection on a white backdrop",
+      "imageUrl": "https://images.unsplash.com/photo-1614178113230-87b333095202?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxsdXh1cnklMjBqZXdlbHJ5fGVufDB8fHx8MTc2OTczMzU0Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury jewelry"
+    }
+  ]
 }

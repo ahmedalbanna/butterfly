@@ -1,4 +1,3 @@
-
 import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
@@ -18,11 +17,10 @@ export default function Home() {
   const featuredProducts = PRODUCTS.filter(p => p.featured);
   const heroImage = PlaceHolderImages.find(img => img.id === 'hero-image');
 
-  // مصفوفة تحتوي على 3 أنماط من الإطارات الجذابة
   const productFrames = [
-    "border-[12px] border-white shadow-2xl", // نمط المعرض (Gallery)
-    "outline outline-1 outline-primary/50 outline-offset-[10px] shadow-sm", // النمط العصري المنسحب (Modern Offset)
-    "border-2 border-primary/10 p-2 bg-white/40 backdrop-blur-sm ring-1 ring-primary/5" // النمط الفاخر الناعم (Soft Luxe)
+    "border-[12px] border-white shadow-2xl",
+    "outline outline-1 outline-primary/50 outline-offset-[10px] shadow-sm",
+    "border-2 border-primary/10 p-2 bg-white/40 backdrop-blur-sm ring-1 ring-primary/5"
   ];
 
   return (
@@ -30,15 +28,17 @@ export default function Home() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative h-[80vh] w-full flex items-center overflow-hidden">
-        <Image 
-          src={heroImage?.imageUrl || ''} 
-          alt="Luxe Collection" 
-          fill 
-          priority
-          className="object-cover"
-          data-ai-hint="luxury jewelry"
-        />
+      <section className="relative h-[80vh] w-full flex items-center overflow-hidden bg-muted">
+        {heroImage?.imageUrl && (
+          <Image 
+            src={heroImage.imageUrl} 
+            alt="Luxe Collection" 
+            fill 
+            priority
+            className="object-cover"
+            data-ai-hint="luxury jewelry"
+          />
+        )}
         <div className="absolute inset-0 bg-black/20" />
         <div className="container relative mx-auto px-4 text-white">
           <div className="max-w-2xl space-y-6">
@@ -88,13 +88,15 @@ export default function Home() {
               {featuredProducts.map((product, index) => (
                 <CarouselItem key={product.id} className="pl-8 md:pl-12 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                   <Link href={`/product/${product.id}`} className="group space-y-8 block py-4">
-                    <div className={`relative aspect-[4/5] overflow-hidden transition-all duration-500 group-hover:scale-[1.02] ${productFrames[index % 3]}`}>
-                      <Image 
-                        src={product.image} 
-                        alt={product.name} 
-                        fill 
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+                    <div className={`relative aspect-[4/5] overflow-hidden transition-all duration-500 group-hover:scale-[1.02] ${productFrames[index % 3]} bg-muted`}>
+                      {product.image && (
+                        <Image 
+                          src={product.image} 
+                          alt={product.name} 
+                          fill 
+                          className="object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                      )}
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
                     </div>
                     <div className="space-y-1 text-center">

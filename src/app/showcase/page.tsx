@@ -1,4 +1,3 @@
-
 "use client"
 
 import Image from 'next/image';
@@ -28,7 +27,6 @@ export default function ShowcasePage() {
   const [cursorText, setCursorText] = useState("");
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // Group products by category
   const groupedProducts = useMemo(() => {
     return CATEGORIES.filter(cat => cat !== 'All').map(cat => ({
       name: cat,
@@ -137,7 +135,6 @@ export default function ShowcasePage() {
         }
       `}</style>
 
-      {/* Custom Cursor - High Responsiveness */}
       {isDesktop && (
         <div 
           className={cn(
@@ -156,7 +153,6 @@ export default function ShowcasePage() {
         </div>
       )}
 
-      {/* Top Controls (Back & Cart) */}
       <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
         <Sheet>
           <SheetTrigger asChild>
@@ -197,7 +193,9 @@ export default function ShowcasePage() {
                   {cart.map((item) => (
                     <div key={item.id} className="flex gap-6 group">
                       <div className="relative w-24 h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
-                        <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                        {item.image && (
+                          <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                        )}
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div className="flex justify-between items-start gap-2">
@@ -298,7 +296,6 @@ export default function ShowcasePage() {
         </Link>
       </div>
 
-      {/* Brand Logo */}
       <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50">
         <div className="flex items-center gap-2 md:gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45">
@@ -308,31 +305,29 @@ export default function ShowcasePage() {
         </div>
       </div>
 
-      {/* Main Grid: Vertical Categories */}
       {groupedProducts.map((group, categoryIndex) => (
         <section 
           key={group.name} 
           data-category-index={categoryIndex}
           className="h-screen w-full snap-start relative flex overflow-x-scroll snap-x snap-mandatory hide-scrollbar bg-black"
         >
-          {/* Horizontal Swiping between products of the same category */}
           {group.products.map((product, productIndex) => (
             <div 
               key={product.id}
               className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
             >
-              {/* Product Visuals */}
-              <div className="w-full lg:w-1/2 h-[45vh] lg:h-full relative overflow-hidden">
-                <Image 
-                  src={product.image} 
-                  alt={product.name} 
-                  fill 
-                  priority={categoryIndex === 0 && productIndex === 0}
-                  className="object-cover animate-subtle-zoom"
-                />
+              <div className="w-full lg:w-1/2 h-[45vh] lg:h-full relative overflow-hidden bg-muted/20">
+                {product.image && (
+                  <Image 
+                    src={product.image} 
+                    alt={product.name} 
+                    fill 
+                    priority={categoryIndex === 0 && productIndex === 0}
+                    className="object-cover animate-subtle-zoom"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/40 pointer-events-none" />
                 
-                {/* Horizontal navigation hint for the same category */}
                 {productIndex < group.products.length - 1 && (
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-2 opacity-40">
                     <span className="text-[8px] uppercase tracking-[0.4em] text-white font-bold rotate-90 mb-8">Next Piece</span>
@@ -341,7 +336,6 @@ export default function ShowcasePage() {
                 )}
               </div>
 
-              {/* Product Info */}
               <div className="w-full lg:w-1/2 h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 text-white bg-black">
                 <div className="max-w-xl space-y-6 md:space-y-10">
                   
@@ -422,7 +416,6 @@ export default function ShowcasePage() {
             </div>
           ))}
 
-          {/* Indicators for current category and navigation instructions */}
           <div className="absolute bottom-8 left-8 hidden lg:flex flex-col gap-2 z-40">
              <div className="flex items-center gap-4">
                 <div className="flex gap-1">
@@ -436,7 +429,6 @@ export default function ShowcasePage() {
         </section>
       ))}
 
-      {/* Vertical Pagination Dots (Categories) */}
       <div className="fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
         {groupedProducts.map((group, i) => (
           <button
@@ -462,7 +454,6 @@ export default function ShowcasePage() {
         ))}
       </div>
 
-      {/* Global Navigation Hint */}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-12 text-white/30 z-40 pointer-events-none">
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3" />
