@@ -475,21 +475,25 @@ export default function Home() {
         </section>
       ))}
 
-      {/* Side Nav Dots */}
-      <div className="fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
+      {/* Side Nav Dots - Enhanced Clarity */}
+      <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5">
         {groupedProducts.map((group, i) => (
           <button
             key={i}
             onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
             className="group relative flex items-center justify-end"
           >
-            <div className="absolute right-12 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none">
-              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">{group.name}</span>
+            <div className="absolute right-10 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none translate-x-4 group-hover:translate-x-0">
+              <div className="bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10 rounded-sm shadow-xl">
+                 <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-primary whitespace-nowrap">{group.name}</span>
+              </div>
             </div>
             <div 
               className={cn(
-                "w-2 h-2 rounded-full transition-all duration-700 border border-primary",
-                activeCategoryIndex === i ? 'bg-primary scale-[2.5] shadow-[0_0_20px_hsl(var(--primary))]' : 'bg-white/20 hover:bg-white/40'
+                "w-2 h-2 rounded-full transition-all duration-700 border",
+                activeCategoryIndex === i 
+                  ? 'bg-primary border-primary scale-[2.5] shadow-[0_0_15px_hsl(var(--primary)/0.6)]' 
+                  : 'bg-white/10 border-white/20 hover:bg-white/40 hover:scale-125'
               )} 
             />
           </button>
