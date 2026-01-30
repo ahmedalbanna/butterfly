@@ -4,7 +4,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { PRODUCTS } from '@/lib/products';
-import { X, ShoppingBag, Sparkles } from 'lucide-react';
+import { X, ShoppingBag, Sparkles, MessageCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 
@@ -13,7 +13,6 @@ export default function ShowcasePage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const [cursorText, setCursorText] = useState("");
-  const cursorRef = useRef<HTMLDivElement>(null);
 
   // تحديث موقع مؤشر الماوس المخصص
   useEffect(() => {
@@ -73,12 +72,10 @@ export default function ShowcasePage() {
         .animate-subtle-zoom {
           animation: subtle-zoom 20s infinite alternate ease-in-out;
         }
-        /* إخفاء مؤشر الماوس الافتراضي في هذه الصفحة فقط */
-        body.showcase-active {
+        body {
           cursor: none !important;
         }
-        body.showcase-active a, 
-        body.showcase-active button {
+        a, button {
           cursor: none !important;
         }
       `}</style>
@@ -167,38 +164,39 @@ export default function ShowcasePage() {
               {/* Specs Grid */}
               <div className={`grid grid-cols-1 md:grid-cols-2 gap-16 border-l-2 border-primary/30 pl-10 py-6 ${activeSection === index ? 'animate-in slide-in-from-bottom fade-in delay-500 duration-1000' : 'opacity-0'}`}>
                 <div className="space-y-3 group cursor-default">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Price Point</p>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Premium Price</p>
                   <p className="text-5xl md:text-7xl font-body font-light tabular-nums">
                     <span className="text-primary text-3xl mr-1">$</span>
                     {product.price.toLocaleString()}
                   </p>
                 </div>
                 <div className="space-y-3 group cursor-default">
-                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Material Composition</p>
+                  <p className="text-[10px] uppercase tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Composition</p>
                   <p className="text-xl md:text-2xl italic font-body text-white/80 leading-relaxed max-w-sm">
                     {product.materials}
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons: Buy and Inquire */}
               <div className={`flex flex-wrap gap-6 pt-10 ${activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'}`}>
                 <Link 
                   href={`/product/${product.id}`}
-                  onMouseEnter={() => handleMouseEnter("Buy Now")}
+                  onMouseEnter={() => handleMouseEnter("Purchase")}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <Button className="bg-primary hover:bg-white hover:text-primary text-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
-                    <ShoppingBag className="mr-3 h-5 w-5" /> Shop Piece
+                  <Button className="bg-primary hover:bg-white hover:text-primary text-white rounded-none px-12 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500 hover:shadow-[0_0_30px_rgba(var(--primary),0.5)]">
+                    <ShoppingBag className="mr-3 h-5 w-5" /> Buy Piece
                   </Button>
                 </Link>
+                
                 <Link 
-                  href="/shop"
-                  onMouseEnter={() => handleMouseEnter("View All")}
+                  href={`/product/${product.id}`}
+                  onMouseEnter={() => handleMouseEnter("Inquiry")}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <Button variant="outline" className="bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-16 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500">
-                    Browse More
+                  <Button variant="outline" className="bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-12 h-20 text-md font-bold uppercase tracking-widest transition-all duration-500">
+                    <MessageCircle className="mr-3 h-5 w-5" /> Inquire Now
                   </Button>
                 </Link>
               </div>
