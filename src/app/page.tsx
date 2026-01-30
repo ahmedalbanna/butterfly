@@ -1,178 +1,486 @@
-import Link from 'next/link';
+
+"use client"
+
 import Image from 'next/image';
-import { Navbar } from '@/components/navbar';
-import { PRODUCTS } from '@/lib/products';
+import Link from 'next/link';
+import { PRODUCTS, CATEGORIES } from '@/lib/products';
+import { X, ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight } from 'lucide-react';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useEffect, useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { useCart } from '@/context/cart-context';
+import { useToast } from '@/hooks/use-toast';
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function Home() {
-  const featuredProducts = PRODUCTS.filter(p => p.featured);
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-image');
+  const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
+  const { toast } = useToast();
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const [cursorText, setCursorText] = useState("");
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  const productFrames = [
-    "border-[12px] border-white shadow-2xl",
-    "outline outline-1 outline-primary/50 outline-offset-[10px] shadow-sm",
-    "border-2 border-primary/10 p-2 bg-white/40 backdrop-blur-sm ring-1 ring-primary/5"
-  ];
+  const groupedProducts = useMemo(() => {
+    return CATEGORIES.filter(cat => cat !== 'All').map(cat => ({
+      name: cat,
+      products: PRODUCTS.filter(p => p.category === cat)
+    })).filter(group => group.products.length > 0);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    const checkDevice = () => {
+      setIsDesktop(window.innerWidth >= 1024);
+    };
+
+    checkDevice();
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('resize', checkDevice);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', checkDevice);
+    };
+  }, []);
+
+  useEffect(() => {
+    const categoryObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = Number(entry.target.getAttribute('data-category-index'));
+            setActiveCategoryIndex(index);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+
+    document.querySelectorAll('section[data-category-index]').forEach((section) => {
+      categoryObserver.observe(section);
+    });
+
+    return () => categoryObserver.disconnect();
+  }, []);
+
+  const handleMouseEnter = (text: string = "") => {
+    if (isDesktop) {
+      setIsHovering(true);
+      setCursorText(text);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setCursorText("");
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image
+    });
+    toast({
+      title: "Added to Bag",
+      description: `${product.name} has been added to your shopping bag.`,
+    });
+  };
+
+  const handleInquiry = (productName: string) => {
+    toast({
+      title: "Inquiry Sent",
+      description: `A personal stylist will contact you regarding ${productName} shortly.`,
+    });
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      
-      {/* Hero Section */}
-      <section className="relative h-[80vh] w-full flex items-center overflow-hidden bg-muted">
-        {heroImage?.imageUrl && (
-          <Image 
-            src={heroImage.imageUrl} 
-            alt="Luxe Collection" 
-            fill 
-            priority
-            className="object-cover"
-            data-ai-hint="luxury jewelry"
-          />
-        )}
-        <div className="absolute inset-0 bg-black/20" />
-        <div className="container relative mx-auto px-4 text-white">
-          <div className="max-w-2xl space-y-6">
-            <h1 className="text-6xl md:text-8xl font-headline font-light leading-tight">
-              Elegance in <br /><span className="italic font-bold text-primary">Every Detail</span>
-            </h1>
-            <p className="text-lg md:text-xl font-body max-w-lg opacity-90">
-              Discover a curated collection of artisanal accessories designed to elevate your style and celebrate life's finest moments.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/shop">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-white border-none px-8 py-7 text-lg rounded-none">
-                  SHOP THE COLLECTION
-                </Button>
-              </Link>
-              <Link href="/ai-stylist">
-                <Button size="lg" variant="outline" className="bg-white/10 backdrop-blur-md text-white border-white/40 hover:bg-white/20 px-8 py-7 text-lg rounded-none">
-                  <Sparkles className="mr-2 h-5 w-5" /> TRY AI STYLIST
-                </Button>
-              </Link>
-            </div>
-          </div>
+    <div className={cn(
+      "h-screen w-full overflow-y-scroll snap-y snap-mandatory bg-black hide-scrollbar selection:bg-primary selection:text-white",
+      isDesktop ? "cursor-none" : "cursor-auto"
+    )}>
+      <style jsx global>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        @keyframes subtle-zoom {
+          0% { transform: scale(1); }
+          100% { transform: scale(1.1); }
+        }
+        .animate-subtle-zoom {
+          animation: subtle-zoom 15s infinite alternate ease-in-out;
+        }
+        @media (min-width: 1024px) {
+          body {
+            cursor: none !important;
+          }
+          a, button, [role="button"] {
+            cursor: none !important;
+          }
+        }
+      `}</style>
+
+      {/* Custom Cursor */}
+      {isDesktop && (
+        <div 
+          className={cn(
+            "fixed top-0 left-0 w-8 h-8 rounded-full border border-primary pointer-events-none z-[9999] transition-transform duration-100 ease-out flex items-center justify-center mix-blend-difference overflow-hidden",
+            isHovering ? 'bg-primary/20 border-white' : 'bg-transparent'
+          )}
+          style={{ 
+            transform: `translate(${mousePos.x - 16}px, ${mousePos.y - 16}px) scale(${isHovering ? 2.5 : 1})`,
+          }}
+        >
+          {cursorText && (
+            <span className="text-[4px] uppercase font-bold text-white tracking-tighter animate-in fade-in zoom-in duration-200">
+              {cursorText}
+            </span>
+          )}
         </div>
-      </section>
+      )}
 
-      {/* Featured Carousel Section */}
-      <section className="py-24 bg-white overflow-hidden">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-end mb-16">
-            <div className="space-y-2">
-              <span className="text-primary font-bold tracking-widest text-xs uppercase">Curated For You</span>
-              <h2 className="text-4xl md:text-5xl font-headline italic">Seasonal Highlights</h2>
+      {/* Floating Header UI */}
+      <div className="fixed top-4 right-4 md:top-8 md:right-8 z-50 flex items-center gap-4">
+        <Sheet>
+          <SheetTrigger asChild>
+            <div 
+              onMouseEnter={() => handleMouseEnter(`Bag (${cartCount})`)}
+              onMouseLeave={handleMouseLeave}
+              className="relative"
+            >
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500"
+              >
+                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-in zoom-in">
+                    {cartCount}
+                  </span>
+                )}
+              </Button>
             </div>
-            <Link href="/shop" className="group hidden sm:flex items-center gap-2 text-sm font-bold tracking-widest uppercase hover:text-primary transition-colors">
-              View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <Carousel
-            opts={{
-              align: "start",
-              loop: true,
-            }}
-            className="w-full relative"
-          >
-            <CarouselContent className="-ml-8 md:-ml-12">
-              {featuredProducts.map((product, index) => (
-                <CarouselItem key={product.id} className="pl-8 md:pl-12 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                  <Link href={`/product/${product.id}`} className="group space-y-8 block py-4">
-                    <div className={`relative aspect-[4/5] overflow-hidden transition-all duration-500 group-hover:scale-[1.02] ${productFrames[index % 3]} bg-muted`}>
-                      {product.image && (
-                        <Image 
-                          src={product.image} 
-                          alt={product.name} 
-                          fill 
-                          className="object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
-                    </div>
-                    <div className="space-y-1 text-center">
-                      <span className="text-[10px] text-secondary font-bold tracking-widest uppercase">{product.category}</span>
-                      <h3 className="text-xl font-headline group-hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
-                      <p className="text-lg font-body font-medium text-primary">${product.price.toLocaleString()}</p>
-                    </div>
-                  </Link>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-black/98 border-l-primary/30 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col">
+            <SheetHeader className="p-8 border-b border-white/10">
+              <SheetTitle className="text-3xl font-headline italic text-white flex items-center gap-3">
+                <ShoppingBag className="text-primary" /> Your Selection
+              </SheetTitle>
+            </SheetHeader>
             
-            <div className="flex justify-center mt-12 gap-4">
-              <CarouselPrevious className="static translate-y-0 h-12 w-12 rounded-none border-primary text-primary hover:bg-primary hover:text-white" />
-              <CarouselNext className="static translate-y-0 h-12 w-12 rounded-none border-primary text-primary hover:bg-primary hover:text-white" />
-            </div>
-          </Carousel>
-        </div>
-      </section>
+            <ScrollArea className="flex-1 px-8 py-6">
+              {cart.length === 0 ? (
+                <div className="h-[40vh] flex flex-col items-center justify-center space-y-4 opacity-50">
+                  <ShoppingBag className="w-12 h-12" />
+                  <p className="font-body italic text-lg text-center">Your shopping bag is waiting for its first treasure.</p>
+                </div>
+              ) : (
+                <div className="space-y-10">
+                  {cart.map((item) => (
+                    <div key={item.id} className="flex gap-6 group">
+                      <div className="relative w-24 h-32 bg-white/5 shrink-0 overflow-hidden rounded-sm border border-white/10">
+                        {item.image && (
+                          <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                        )}
+                      </div>
+                      <div className="flex-1 flex flex-col justify-between py-1">
+                        <div className="flex justify-between items-start gap-2">
+                          <div className="space-y-1">
+                            <h4 className="font-headline text-xl leading-tight group-hover:text-primary transition-colors">{item.name}</h4>
+                            <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleInquiry(item.name)}
+                              className="text-white/40 hover:text-primary transition-colors p-1"
+                              title="Inquire about this piece"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={() => removeFromCart(item.id)}
+                              className="text-white/40 hover:text-destructive transition-colors p-1"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="flex items-center border border-white/10 rounded-none bg-white/5">
+                            <button 
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="p-1.5 hover:text-primary transition-colors"
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="p-1.5 hover:text-primary transition-colors"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="font-bold text-primary">${(item.price * item.quantity).toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
 
-      {/* AI CTA Banner */}
-      <section className="bg-primary/5 py-24 border-y">
-        <div className="container mx-auto px-4 flex flex-col items-center text-center space-y-8">
-          <div className="p-4 bg-white rounded-full shadow-lg">
-            <Sparkles className="w-8 h-8 text-primary" />
-          </div>
-          <div className="max-w-3xl space-y-4">
-            <h2 className="text-4xl md:text-5xl font-headline">Meet Your AI Personal Stylist</h2>
-            <p className="text-lg text-secondary max-w-xl mx-auto italic">
-              "Not sure which accessory matches your outfit? Our AI will suggest the perfect pairings from our collection."
-            </p>
-          </div>
-          <Link href="/ai-stylist">
-            <Button size="lg" className="bg-primary text-white rounded-none px-12 h-14 text-lg font-bold tracking-widest uppercase">
-              GET RECOMMENDATIONS
-            </Button>
-          </Link>
-        </div>
-      </section>
+            {cart.length > 0 && (
+              <div className="p-8 bg-white/5 border-t border-white/10 space-y-6">
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm text-white/60">
+                    <span className="uppercase tracking-widest text-[10px]">Estimated Subtotal</span>
+                    <span>${cartTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-2xl font-headline font-bold">
+                    <span className="italic">Total</span>
+                    <span className="text-primary">${cartTotal.toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <Link href="/checkout" className="block w-full">
+                    <Button className="w-full h-14 bg-primary text-white rounded-none uppercase tracking-widest font-bold hover:bg-white hover:text-primary transition-all duration-500">
+                      Purchase Now <ArrowRight className="ml-2 w-4 h-4" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleInquiry("the entire selection")}
+                    className="w-full h-14 bg-transparent border-white/20 text-white rounded-none uppercase tracking-widest font-bold hover:bg-white/10 transition-all duration-500"
+                  >
+                    Inquire About Bag <MessageCircle className="ml-2 w-4 h-4" />
+                  </Button>
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 uppercase tracking-widest">
+                  <ShieldCheck className="w-3 h-3" /> Secure & Private Checkout
+                </div>
+              </div>
+            )}
+          </SheetContent>
+        </Sheet>
 
-      {/* Footer */}
-      <footer className="mt-auto border-t py-16 bg-white">
-        <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left">
-          <div className="space-y-4">
-            <h3 className="text-2xl font-headline font-bold text-primary">LuxeFinds</h3>
-            <p className="text-sm text-secondary italic">Crafting elegance through artisanal accessories since 2024.</p>
+        <Link 
+          href="/shop" 
+          onMouseEnter={() => handleMouseEnter("Shop All")}
+          onMouseLeave={handleMouseLeave}
+        >
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-14 md:w-14 border border-white/20 backdrop-blur-xl transition-all duration-500 group"
+          >
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6 group-hover:rotate-90 transition-transform duration-500" />
+          </Button>
+        </Link>
+      </div>
+
+      {/* Brand Logo */}
+      <div className="fixed top-4 left-4 md:top-8 md:left-8 z-50">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45">
+            <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
           </div>
-          <div>
-            <h4 className="font-bold mb-6 text-xs tracking-widest uppercase">SHOP</h4>
-            <ul className="space-y-3 text-sm text-secondary">
-              <li><Link href="/shop" className="hover:text-primary transition-colors">All Products</Link></li>
-              <li><Link href="/shop" className="hover:text-primary transition-colors">Jewelry</Link></li>
-              <li><Link href="/shop" className="hover:text-primary transition-colors">Watches</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6 text-xs tracking-widest uppercase">SUPPORT</h4>
-            <ul className="space-y-3 text-sm text-secondary">
-              <li><Link href="#" className="hover:text-primary transition-colors">Contact Us</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Shipping & Returns</Link></li>
-              <li><Link href="#" className="hover:text-primary transition-colors">Care Guide</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-6 text-xs tracking-widest uppercase">NEWSLETTER</h4>
-            <p className="text-sm text-secondary mb-6">Join our list for exclusive releases and private viewings.</p>
-            <div className="flex flex-col gap-2">
-              <input className="bg-muted px-4 py-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary rounded-none" placeholder="Email Address" />
-              <Button className="bg-primary text-white rounded-none font-bold uppercase tracking-widest">JOIN</Button>
+          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter">LuxeFinds</h2>
+        </div>
+      </div>
+
+      {/* Sections Map */}
+      {groupedProducts.map((group, categoryIndex) => (
+        <section 
+          key={group.name} 
+          data-category-index={categoryIndex}
+          className="h-screen w-full snap-start relative flex overflow-x-scroll snap-x snap-mandatory hide-scrollbar bg-black"
+        >
+          {group.products.map((product, productIndex) => (
+            <div 
+              key={product.id}
+              className="h-screen w-screen snap-center shrink-0 relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
+            >
+              {/* Product Visuals */}
+              <div className="w-full lg:w-1/2 h-[45vh] lg:h-full relative overflow-hidden bg-muted/20">
+                {product.image && (
+                  <Image 
+                    src={product.image} 
+                    alt={product.name} 
+                    fill 
+                    priority={categoryIndex === 0 && productIndex === 0}
+                    className="object-cover animate-subtle-zoom"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/40 pointer-events-none" />
+                
+                {/* Horizontal Swipe Indicator */}
+                {productIndex < group.products.length - 1 && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-2 opacity-40">
+                    <span className="text-[8px] uppercase tracking-[0.4em] text-white font-bold rotate-90 mb-8">Next Piece</span>
+                    <ChevronRight className="w-4 h-4 text-white animate-pulse" />
+                  </div>
+                )}
+              </div>
+
+              {/* Product Info */}
+              <div className="w-full lg:w-1/2 h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 text-white bg-black">
+                <div className="max-w-xl space-y-6 md:space-y-10">
+                  
+                  {/* Category Badge */}
+                  <div className={cn(
+                    "transition-all duration-1000",
+                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+                  )}>
+                    <span className="inline-flex items-center gap-2 py-1 px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[10px] mb-2 backdrop-blur-md rounded-full">
+                      <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
+                      {group.name}
+                    </span>
+                    <p className="text-[8px] text-white/40 uppercase tracking-widest mt-1 ml-4">Piece {productIndex + 1} of {group.products.length}</p>
+                  </div>
+
+                  {/* Product Title */}
+                  <div className={cn(
+                    "transition-all duration-1000 delay-200",
+                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
+                  )}>
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-headline italic leading-none drop-shadow-2xl mb-4">
+                      {product.name.split(' ').map((word, i) => (
+                        <span key={i} className="inline-block mr-3 md:mr-5 last:text-primary">{word} </span>
+                      ))}
+                    </h1>
+                  </div>
+
+                  {/* Pricing and Details */}
+                  <div className={cn(
+                    "grid grid-cols-2 gap-8 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 py-2 md:py-4 transition-all duration-1000 delay-500",
+                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  )}>
+                    <div className="space-y-1 group cursor-default">
+                      <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Exclusive Price</p>
+                      <p className="text-3xl md:text-5xl font-body font-light tabular-nums">
+                        <span className="text-primary text-xl md:text-2xl mr-1">$</span>
+                        {product.price.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-1 group cursor-default">
+                      <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Composition</p>
+                      <p className="text-xs md:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
+                        {product.materials}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className={cn(
+                    "flex flex-col sm:flex-row gap-4 pt-6 md:pt-8 transition-all duration-1000 delay-700",
+                    activeCategoryIndex === categoryIndex ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+                  )}>
+                    <div 
+                      onMouseEnter={() => handleMouseEnter("Purchase")}
+                      onMouseLeave={handleMouseLeave}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button 
+                        onClick={() => handleAddToCart(product)}
+                        className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      >
+                        <ShoppingBag className="mr-2 h-4 w-4" /> Buy Piece
+                      </Button>
+                    </div>
+                    
+                    <div 
+                      onMouseEnter={() => handleMouseEnter("Inquiry")}
+                      onMouseLeave={handleMouseLeave}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button 
+                        variant="outline" 
+                        onClick={() => handleInquiry(product.name)}
+                        className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
+                      >
+                        <MessageCircle className="mr-2 h-4 w-4" /> Inquire Now
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          ))}
+
+          {/* Bottom Indicators per Category */}
+          <div className="absolute bottom-8 left-8 hidden lg:flex flex-col gap-2 z-40">
+             <div className="flex items-center gap-4">
+                <div className="flex gap-1">
+                  {group.products.map((_, i) => (
+                    <div key={i} className={cn("h-1 w-8 transition-colors duration-500", "bg-white/10")} />
+                  ))}
+                </div>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-white/40 font-bold">Category Explore</span>
+             </div>
           </div>
+        </section>
+      ))}
+
+      {/* Navigation Bullets (Desktop Only) */}
+      <div className="fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
+        {groupedProducts.map((group, i) => (
+          <button
+            key={i}
+            onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
+            onMouseEnter={() => handleMouseEnter(group.name)}
+            onMouseLeave={handleMouseLeave}
+            className="group relative flex items-center justify-end"
+          >
+            <span className={cn(
+              "absolute right-8 text-[10px] uppercase tracking-widest font-bold text-primary transition-all duration-500",
+              activeCategoryIndex === i ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+            )}>
+              {group.name}
+            </span>
+            <div 
+              className={cn(
+                "w-2 h-2 rounded-full transition-all duration-700 border border-primary",
+                activeCategoryIndex === i ? 'bg-primary scale-[2.5] shadow-[0_0_15px_hsl(var(--primary))]' : 'bg-white/20'
+              )} 
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* Scroll Help Icons */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden lg:flex items-center gap-12 text-white/30 z-40 pointer-events-none">
+        <div className="flex items-center gap-2">
+          <ChevronLeft className="w-3 h-3" />
+          <span className="text-[8px] uppercase tracking-widest font-bold">Swipe Products</span>
+          <ChevronRight className="w-3 h-3" />
         </div>
-        <div className="container mx-auto px-4 mt-16 pt-8 border-t text-center text-[10px] text-secondary tracking-widest uppercase">
-          © 2024 LUXEFINDS. ALL RIGHTS RESERVED.
+        <div className="w-px h-4 bg-white/20" />
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-[8px] uppercase tracking-widest font-bold">Scroll Categories</span>
+          <div className="h-4 w-[1px] bg-white/20 animate-bounce" />
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
