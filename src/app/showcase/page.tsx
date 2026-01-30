@@ -105,11 +105,11 @@ export default function ShowcasePage() {
           scrollbar-width: none;
         }
         @keyframes subtle-zoom {
-          0% { transform: scale(1.05); }
-          100% { transform: scale(1.15); }
+          0% { transform: scale(1); }
+          100% { transform: scale(1.1); }
         }
         .animate-subtle-zoom {
-          animation: subtle-zoom 20s infinite alternate ease-in-out;
+          animation: subtle-zoom 15s infinite alternate ease-in-out;
         }
         @media (min-width: 1024px) {
           body {
@@ -170,79 +170,79 @@ export default function ShowcasePage() {
         <section 
           key={product.id} 
           data-index={index}
-          className="h-screen w-full snap-start relative flex flex-col items-center justify-center overflow-hidden"
+          className="h-screen w-full snap-start relative flex flex-col lg:flex-row items-center overflow-hidden bg-black"
         >
-          {/* Background Images Carousel */}
-          <div className="absolute inset-0 z-0 overflow-hidden">
+          {/* Side Image Carousel Container */}
+          <div className="w-full lg:w-1/2 h-[45vh] lg:h-full relative overflow-hidden group/image">
             <Carousel className="h-full w-full" opts={{ loop: true }}>
               <CarouselContent className="h-full w-full ml-0">
                 {(product.images && product.images.length > 0 ? product.images : [product.image]).map((img, i) => (
                   <CarouselItem key={i} className="h-full w-full p-0">
-                    <div className="relative h-full w-full">
+                    <div className="relative h-full w-full overflow-hidden">
                       <Image 
                         src={img} 
                         alt={`${product.name} ${i + 1}`} 
                         fill 
                         priority={index === 0 && i === 0}
-                        className="object-cover opacity-50 md:opacity-60 animate-subtle-zoom"
+                        className="object-cover animate-subtle-zoom"
                       />
                     </div>
                   </CarouselItem>
                 ))}
               </CarouselContent>
+              {/* Overlay for depth */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent lg:bg-gradient-to-r lg:from-transparent lg:to-black/40 pointer-events-none" />
+              
               {/* Show navigation buttons if more than one image */}
               {(product.images && product.images.length > 1) && (
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 md:px-12 z-20 pointer-events-none">
-                  <CarouselPrevious className="static pointer-events-auto h-12 w-12 rounded-none bg-white/10 hover:bg-white/20 border-white/20 text-white translate-y-0" />
-                  <CarouselNext className="static pointer-events-auto h-12 w-12 rounded-none bg-white/10 hover:bg-white/20 border-white/20 text-white translate-y-0" />
+                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 z-20 pointer-events-none opacity-0 group-hover/image:opacity-100 transition-opacity duration-500">
+                  <CarouselPrevious className="static pointer-events-auto h-10 w-10 rounded-none bg-white/10 hover:bg-primary border-white/20 text-white translate-y-0" />
+                  <CarouselNext className="static pointer-events-auto h-10 w-10 rounded-none bg-white/10 hover:bg-primary border-white/20 text-white translate-y-0" />
                 </div>
               )}
             </Carousel>
-            {/* Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/20 to-black pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-transparent to-transparent hidden lg:block pointer-events-none" />
           </div>
 
-          {/* Content */}
-          <div className="relative z-10 container mx-auto px-6 md:px-12 h-full flex flex-col justify-center text-white">
-            <div className="max-w-5xl space-y-6 md:space-y-12">
+          {/* Content Container */}
+          <div className="w-full lg:w-1/2 h-[55vh] lg:h-full relative z-10 flex flex-col justify-center px-6 md:px-12 lg:px-20 text-white bg-black">
+            <div className="max-w-xl space-y-6 md:space-y-10">
               
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in duration-1000' : 'opacity-0'}`}>
-                <span className="inline-flex items-center gap-2 py-1 px-4 md:px-6 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.2em] md:tracking-[0.4em] uppercase text-[8px] md:text-[10px] mb-2 md:mb-6 backdrop-blur-md rounded-full">
-                  <span className="w-1.5 h-1.5 md:w-2 md:h-2 bg-primary rounded-full animate-ping" />
+                <span className="inline-flex items-center gap-2 py-1 px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[10px] mb-2 backdrop-blur-md rounded-full">
+                  <span className="w-1.5 h-1.5 bg-primary rounded-full animate-ping" />
                   {product.category}
                 </span>
               </div>
 
               <div className={`${activeSection === index ? 'animate-in slide-in-from-left fade-in delay-200 duration-1000' : 'opacity-0'}`}>
-                <h1 className="text-4xl sm:text-6xl md:text-8xl lg:text-[10rem] font-headline italic leading-none drop-shadow-2xl mb-4 text-white">
+                <h1 className="text-4xl md:text-6xl lg:text-7xl xl:text-8xl font-headline italic leading-none drop-shadow-2xl mb-4">
                   {product.name.split(' ').map((word, i) => (
-                    <span key={i} className="inline-block mr-2 md:mr-6 last:text-primary">{word} </span>
+                    <span key={i} className="inline-block mr-3 md:mr-5 last:text-primary">{word} </span>
                   ))}
                 </h1>
               </div>
 
               <div className={cn(
-                "grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 border-l-2 border-primary/30 pl-6 md:pl-10 py-2 md:py-6",
+                "grid grid-cols-2 gap-8 lg:gap-12 border-l-2 border-primary/30 pl-6 lg:pl-8 py-2 md:py-4",
                 activeSection === index ? 'animate-in slide-in-from-bottom fade-in delay-500 duration-1000' : 'opacity-0'
               )}>
-                <div className="space-y-1 md:space-y-3 group cursor-default">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Premium Price</p>
-                  <p className="text-3xl md:text-7xl font-body font-light tabular-nums">
-                    <span className="text-primary text-xl md:text-3xl mr-1">$</span>
+                <div className="space-y-1 group cursor-default">
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Exclusive Price</p>
+                  <p className="text-3xl md:text-5xl font-body font-light tabular-nums">
+                    <span className="text-primary text-xl md:text-2xl mr-1">$</span>
                     {product.price.toLocaleString()}
                   </p>
                 </div>
-                <div className="space-y-1 md:space-y-3 group cursor-default">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.4em] text-primary font-bold transition-all group-hover:tracking-[0.6em]">Composition</p>
-                  <p className="text-sm md:text-2xl italic font-body text-white/80 leading-relaxed max-w-sm">
+                <div className="space-y-1 group cursor-default">
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-primary font-bold transition-all group-hover:tracking-[0.5em]">Composition</p>
+                  <p className="text-xs md:text-lg italic font-body text-white/80 leading-relaxed line-clamp-2">
                     {product.materials}
                   </p>
                 </div>
               </div>
 
               <div className={cn(
-                "flex flex-col sm:flex-row gap-4 md:gap-6 pt-6 md:pt-10",
+                "flex flex-col sm:flex-row gap-4 pt-6 md:pt-8",
                 activeSection === index ? 'animate-in fade-in slide-in-from-bottom delay-700 duration-1000' : 'opacity-0'
               )}>
                 <div 
@@ -252,9 +252,9 @@ export default function ShowcasePage() {
                 >
                   <Button 
                     onClick={() => handleAddToCart(product)}
-                    className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500"
+                    className="w-full sm:w-auto bg-primary hover:bg-white hover:text-primary text-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500"
                   >
-                    <ShoppingBag className="mr-2 md:mr-3 h-4 md:h-5 w-4 md:w-5" /> Buy Piece
+                    <ShoppingBag className="mr-2 h-4 w-4" /> Buy Piece
                   </Button>
                 </div>
                 
@@ -264,8 +264,8 @@ export default function ShowcasePage() {
                   onMouseLeave={handleMouseLeave}
                   className="w-full sm:w-auto"
                 >
-                  <Button variant="outline" className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-6 md:px-12 h-14 md:h-20 text-sm md:text-md font-bold uppercase tracking-widest transition-all duration-500">
-                    <MessageCircle className="mr-2 md:mr-3 h-4 md:h-5 w-4 md:w-5" /> Inquire Now
+                  <Button variant="outline" className="w-full sm:w-auto bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none px-8 md:px-12 h-14 md:h-16 text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500">
+                    <MessageCircle className="mr-2 h-4 w-4" /> Details
                   </Button>
                 </Link>
               </div>
@@ -275,16 +275,16 @@ export default function ShowcasePage() {
           {/* Scroll Indicator */}
           {index < PRODUCTS.length - 1 && (
             <div className={cn(
-              "absolute bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 md:gap-4 transition-all duration-1000",
+              "absolute bottom-4 right-4 lg:bottom-12 lg:left-1/2 lg:-translate-x-1/2 flex flex-col items-center gap-2 transition-all duration-1000 z-50",
               activeSection === index ? 'opacity-40 translate-y-0' : 'opacity-0 translate-y-10'
             )}>
-               <span className="text-[8px] md:text-[10px] uppercase tracking-[0.5em] md:tracking-[0.8em] text-white font-bold ml-[0.5em]">Next Piece</span>
-               <div className="w-px h-8 md:h-16 bg-gradient-to-b from-primary to-transparent animate-bounce" />
+               <span className="hidden lg:block text-[8px] uppercase tracking-[0.8em] text-white font-bold ml-[0.8em]">Next Piece</span>
+               <div className="w-px h-6 lg:h-16 bg-gradient-to-b from-primary to-transparent animate-bounce" />
             </div>
           )}
 
-          {/* Side Nav */}
-          <div className="fixed right-4 md:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
+          {/* Side Nav (Pagination Dots) */}
+          <div className="fixed right-4 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-6 z-40">
             {PRODUCTS.map((_, i) => (
               <button
                 key={i}
