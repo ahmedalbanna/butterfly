@@ -435,29 +435,21 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Actions with Clipping Safety */}
+                    {/* Actions with Clipping Safety - Simplified to 2 main buttons */}
                     <div className={cn(
-                      "flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
+                      "flex flex-col sm:flex-row gap-3 md:gap-4 pt-4 md:pt-8 transition-content delay-300 w-full box-border",
                       isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                     )}>
                       <Button 
                         onClick={() => handleAddToCart(product)}
-                        className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
+                        className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-12 md:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
                         <ShoppingBag className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Add To Bag</span>
                       </Button>
                       
                       <Button 
-                        variant="outline" 
-                        onClick={() => handleInquiry(product.name)}
-                        className="flex-1 min-w-[140px] bg-white/5 backdrop-blur-xl text-white border-white/20 hover:bg-white/20 hover:border-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
-                      >
-                        <MessageCircle className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Inquiry</span>
-                      </Button>
-
-                      <Button 
                         onClick={() => startCall({ name: product.name, materials: product.materials })}
-                        className="w-full sm:w-auto bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-11 sm:h-12 md:h-14 lg:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
+                        className="flex-1 min-w-[140px] bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-12 md:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
                         <Phone className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Voice Stylist</span>
                       </Button>
