@@ -1,416 +1,232 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { getAllCallSessions, getCallStats, updateCallStatus, deleteCallSession } from '@/app/actions/admin-calls';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { getActiveCalls, getCallHistory, getCallStats } from '@/app/actions/calls';
-import { useWebRTCCall } from '@/hooks/use-webrtc-call';
-import { Phone, PhoneIncoming, PhoneOff, Volume2, VolumeX, Radio, Clock, User } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Phone, Clock, Trash2, PhoneCall, PhoneMissed, PhoneOff, Radio } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { VoiceCallSession } from '@prisma/client';
 
-interface VoiceCallSession {
-  id: string;
-  customerId: string;
-  customerName: string;
-  status: string;
-  startedAt: Date;
-  endedAt: Date | null;
-  duration: number | null;
-  adminId: string | null;
-  adminName: string | null;
-}
-
-export default function AdminCallsPage() {
-  const [activeCalls, setActiveCalls] = useState<VoiceCallSession[]>([]);
-  const [callHistory, setCallHistory] = useState<VoiceCallSession[]>([]);
-  const [stats, setStats] = useState({ total: 0, active: 0, missed: 0, averageDuration: 0 });
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCall, setSelectedCall] = useState<VoiceCallSession | null>(null);
-  const [callDuration, setCallDuration] = useState(0);
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const callStartTimeRef = useRef<number | null>(null);
-  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // WebRTC for active call
-  const webrtc = useWebRTCCall({
-    callId: selectedCall?.id || 'dummy',
-    role: 'admin',
-    onStatusChange: (status) => {
-      console.log('[Admin Call] Status:', status);
-      
-      if (status === 'connected' && selectedCall) {
-        // Update call status in database
-        fetch('/api/calls/session', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            callId: selectedCall.id,
-            status: 'active',
-            adminId: 'admin-1',
-            adminName: 'Admin',
-          }),
-        });
-
-        // Start duration timer
-        callStartTimeRef.current = Date.now();
-        durationIntervalRef.current = setInterval(() => {
-          if (callStartTimeRef.current) {
-            setCallDuration(Math.floor((Date.now() - callStartTimeRef.current) / 1000));
-          }
-        }, 1000);
-      } else if (status === 'ended') {
-        handleCallEnd();
-      }
-    },
-    onError: (error) => {
-      console.error('[Admin Call] Error:', error);
-    },
+export default function CallsPage() {
+  const [calls, setCalls] = useState<VoiceCallSession[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    ringing: 0,
+    active: 0,
+    ended: 0,
+    missed: 0,
+    declined: 0,
+    totalDuration: 0,
+    averageDuration: 0
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Play remote audio stream
   useEffect(() => {
-    if (webrtc.remoteStream && audioRef.current) {
-      console.log('[Admin Call] Setting remote stream to audio element');
-      audioRef.current.srcObject = webrtc.remoteStream;
-      
-      // Ensure audio plays (browser autoplay policy)
-      const playAudio = async () => {
-        try {
-          await audioRef.current?.play();
-          console.log('[Admin Call] Remote audio playing');
-        } catch (error) {
-          console.error('[Admin Call] Failed to play audio:', error);
-          // Retry after user interaction
-          setTimeout(playAudio, 1000);
-        }
-      };
-      
-      playAudio();
-    }
-    
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.srcObject = null;
-      }
-    };
-  }, [webrtc.remoteStream]);
+    loadData();
+    // Refresh every 5 seconds
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadData = async () => {
-    const [callsResult, historyResult, statsResult] = await Promise.all([
-      getActiveCalls(),
-      getCallHistory(20),
-      getCallStats(),
+    const [callsData, statsData] = await Promise.all([
+      getAllCallSessions(),
+      getCallStats()
     ]);
-
-    if (callsResult.success) {
-      setActiveCalls(callsResult.calls as VoiceCallSession[]);
-    }
-    if (historyResult.success) {
-      setCallHistory(historyResult.calls as VoiceCallSession[]);
-    }
-    if (statsResult.success) {
-      setStats(statsResult.stats);
-    }
-
+    setCalls(callsData);
+    setStats(statsData);
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    loadData();
+  const handleDelete = async (call: VoiceCallSession) => {
+    if (!confirm(`Are you sure you want to delete this call session?`)) return;
 
-    // Poll for new calls every 2 seconds
-    pollingIntervalRef.current = setInterval(() => {
-      loadData();
-    }, 2000);
-
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
-  }, []);
-
-  const handleCallEnd = () => {
-    // Stop duration timer
-    if (durationIntervalRef.current) {
-      clearInterval(durationIntervalRef.current);
-      durationIntervalRef.current = null;
-    }
-
-    // Update call in database
-    if (selectedCall && callStartTimeRef.current) {
-      const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
-      fetch('/api/calls/session', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callId: selectedCall.id,
-          status: 'ended',
-          duration,
-        }),
+    const result = await deleteCallSession(call.id);
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: 'Call session deleted'
       });
+      loadData();
     }
-
-    setSelectedCall(null);
-    setCallDuration(0);
-    callStartTimeRef.current = null;
-    loadData();
   };
 
-  const acceptCall = async (call: VoiceCallSession) => {
-    setSelectedCall(call);
-    setCallDuration(0);
-    
-    // WebRTC will start after selectedCall is set
-    setTimeout(() => {
-      webrtc.answerCall();
-    }, 100);
+  const getStatusBadge = (status: string) => {
+    const configs = {
+      ringing: { label: 'Ringing', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', icon: Phone },
+      active: { label: 'Active', color: 'bg-green-500/20 text-green-400 border-green-500/30', icon: Radio },
+      ended: { label: 'Ended', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30', icon: PhoneOff },
+      missed: { label: 'Missed', color: 'bg-red-500/20 text-red-400 border-red-500/30', icon: PhoneMissed },
+      declined: { label: 'Declined', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30', icon: PhoneOff }
+    };
+    const config = configs[status as keyof typeof configs] || configs.ringing;
+    const Icon = config.icon;
+    return (
+      <Badge className={`${config.color} border flex items-center gap-1`}>
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </Badge>
+    );
   };
 
-  const declineCall = async (call: VoiceCallSession) => {
-    await fetch('/api/calls/session', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        callId: call.id,
-        status: 'declined',
-      }),
-    });
-    loadData();
-  };
-
-  const endCall = () => {
-    webrtc.endCall();
-    handleCallEnd();
-  };
-
-  const formatDuration = (seconds: number) => {
+  const formatDuration = (seconds: number | null) => {
+    if (!seconds) return 'N/A';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}m ${secs}s`;
   };
 
-  const ringingCalls = activeCalls.filter(c => c.status === 'ringing');
-  const ongoingCalls = activeCalls.filter(c => c.status === 'active');
-
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-6">
+    <div className="p-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-serif text-primary mb-2">Voice Calls</h1>
-        <p className="text-neutral-400">Manage incoming and active voice calls</p>
+      <div className="border-b border-white/10 pb-6">
+        <h1 className="text-4xl font-headline italic text-white mb-2">Voice Calls</h1>
+        <p className="text-sm text-white/60 uppercase tracking-wider">Monitor customer voice call sessions</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-neutral-900/50 border-primary/20">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Incoming</CardDescription>
-            <CardTitle className="text-3xl text-primary">{ringingCalls.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-neutral-900/50 border-green-500/20">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Active</CardDescription>
-            <CardTitle className="text-3xl text-green-400">{ongoingCalls.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-neutral-900/50 border-neutral-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Missed</CardDescription>
-            <CardTitle className="text-3xl text-neutral-200">{stats.missed}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-neutral-900/50 border-neutral-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Avg Duration</CardDescription>
-            <CardTitle className="text-3xl text-neutral-200">{formatDuration(stats.averageDuration)}</CardTitle>
-          </CardHeader>
-        </Card>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { label: 'Total Calls', value: stats.total, icon: PhoneCall, color: 'text-blue-400' },
+          { label: 'Active', value: stats.active, icon: Radio, color: 'text-green-400' },
+          { label: 'Ended', value: stats.ended, icon: PhoneOff, color: 'text-gray-400' },
+          { label: 'Missed', value: stats.missed, icon: PhoneMissed, color: 'text-red-400' },
+          { label: 'Total Duration', value: formatDuration(stats.totalDuration), icon: Clock, color: 'text-purple-400' },
+          { label: 'Avg Duration', value: formatDuration(stats.averageDuration), icon: Clock, color: 'text-primary' }
+        ].map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className="bg-black/40 border-white/10">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon className={`w-4 h-4 ${stat.color}`} />
+                  <p className="text-xs text-white/60 uppercase tracking-wider">{stat.label}</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{stat.value}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {/* Active Call Interface */}
-      {selectedCall && webrtc.status !== 'idle' && (
-        <Card className="bg-gradient-to-br from-green-500/10 to-primary/10 border-green-500/30">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Radio className="h-5 w-5 text-green-400 animate-pulse" />
-                  Active Call: {selectedCall.customerName}
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  {webrtc.status === 'connected' ? `Duration: ${formatDuration(callDuration)}` : 'Connecting...'}
-                </CardDescription>
+      {/* Calls List */}
+      {isLoading ? (
+        <div className="text-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        </div>
+      ) : calls.length === 0 ? (
+        <div className="text-center py-20">
+          <Phone className="w-16 h-16 text-white/20 mx-auto mb-4" />
+          <p className="text-white/40 italic">No call sessions yet</p>
+        </div>
+      ) : (
+        <div className="bg-black/40 border border-white/10 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-black/60 border-b border-white/10">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-white/60 font-bold">Customer</th>
+                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-white/60 font-bold">Status</th>
+                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-white/60 font-bold">Started</th>
+                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-white/60 font-bold">Duration</th>
+                  <th className="px-6 py-4 text-left text-xs uppercase tracking-wider text-white/60 font-bold">Admin</th>
+                  <th className="px-6 py-4 text-right text-xs uppercase tracking-wider text-white/60 font-bold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {calls.map((call) => (
+                  <tr key={call.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-headline text-white">{call.customerName}</p>
+                        <p className="text-xs text-white/40 font-mono">{call.customerId.slice(0, 12)}...</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(call.status)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="text-white/80">{new Date(call.startedAt).toLocaleDateString()}</p>
+                        <p className="text-xs text-white/40">{new Date(call.startedAt).toLocaleTimeString()}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span className="text-white font-mono">{formatDuration(call.duration)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {call.adminName ? (
+                        <div>
+                          <p className="text-white/80">{call.adminName}</p>
+                          <p className="text-xs text-white/40">Handled</p>
+                        </div>
+                      ) : (
+                        <span className="text-white/40 italic">Not answered</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleDelete(call)}
+                          className="h-8 w-8 text-white/60 hover:text-red-400 hover:bg-red-400/10"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Active Calls Alert */}
+      {stats.active > 0 && (
+        <Card className="bg-green-500/10 border-green-500/30">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center border-2 border-green-500/40">
+                <Radio className="w-6 h-6 text-green-400 animate-pulse" />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={webrtc.toggleMute}
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "rounded-full",
-                    webrtc.isMuted && "bg-red-500/20 border-red-500/40"
-                  )}
-                >
-                  {webrtc.isMuted ? <VolumeX className="h-4 w-4 text-red-400" /> : <Volume2 className="h-4 w-4" />}
-                </Button>
-                <Button
-                  onClick={endCall}
-                  variant="destructive"
-                  size="icon"
-                  className="rounded-full"
-                >
-                  <PhoneOff className="h-4 w-4" />
-                </Button>
+              <div>
+                <p className="text-xl font-headline text-white mb-1">
+                  {stats.active} Active {stats.active === 1 ? 'Call' : 'Calls'}
+                </p>
+                <p className="text-sm text-green-400 uppercase tracking-wider">Live voice connections in progress</p>
               </div>
             </div>
-          </CardHeader>
+          </CardContent>
         </Card>
       )}
 
-      {/* Main Content */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
-        {/* Incoming Calls */}
-        <Card className="bg-neutral-900/50 border-neutral-700 flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PhoneIncoming className="h-5 w-5 text-primary" />
-              Incoming Calls ({ringingCalls.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 min-h-0">
-            <ScrollArea className="h-full pr-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-neutral-400">Loading calls...</div>
-              ) : ringingCalls.length === 0 ? (
-                <div className="text-center py-8 text-neutral-400">
-                  <PhoneIncoming className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No incoming calls</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {ringingCalls.map((call) => (
-                    <Card key={call.id} className="bg-neutral-800/50 border-primary/20 animate-pulse">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-neutral-100">{call.customerName}</p>
-                              <p className="text-xs text-neutral-400">
-                                {formatDistanceToNow(new Date(call.startedAt), { addSuffix: true })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => acceptCall(call)}
-                              size="sm"
-                              className="bg-green-500 hover:bg-green-600"
-                              disabled={!!selectedCall}
-                            >
-                              <Phone className="h-4 w-4 mr-1" />
-                              Accept
-                            </Button>
-                            <Button
-                              onClick={() => declineCall(call)}
-                              size="sm"
-                              variant="outline"
-                              className="border-red-500/40 text-red-400 hover:bg-red-500/10"
-                            >
-                              <PhoneOff className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
+      {/* Ringing Calls Alert */}
+      {stats.ringing > 0 && (
+        <Card className="bg-yellow-500/10 border-yellow-500/30 animate-pulse">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center border-2 border-yellow-500/40">
+                <Phone className="w-6 h-6 text-yellow-400 animate-bounce" />
+              </div>
+              <div>
+                <p className="text-xl font-headline text-white mb-1">
+                  {stats.ringing} Incoming {stats.ringing === 1 ? 'Call' : 'Calls'}
+                </p>
+                <p className="text-sm text-yellow-400 uppercase tracking-wider">Customers waiting for answer</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        {/* Call History */}
-        <Card className="bg-neutral-900/50 border-neutral-700 flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              Recent Calls
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 min-h-0">
-            <ScrollArea className="h-full pr-4">
-              {callHistory.length === 0 ? (
-                <div className="text-center py-8 text-neutral-400">No call history</div>
-              ) : (
-                <div className="space-y-2">
-                  {callHistory.map((call) => (
-                    <div
-                      key={call.id}
-                      className="p-3 rounded-lg bg-neutral-800/30 border border-neutral-700/50 hover:bg-neutral-800/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-neutral-200 text-sm">{call.customerName}</p>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              "text-xs",
-                              call.status === 'ended' && "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
-                              call.status === 'missed' && "bg-red-500/10 text-red-400 border-red-500/20",
-                              call.status === 'declined' && "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                            )}
-                          >
-                            {call.status}
-                          </Badge>
-                        </div>
-                        {call.duration && (
-                          <span className="text-xs text-neutral-500">
-                            {formatDuration(call.duration)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-500 mb-1">
-                        {format(new Date(call.startedAt), 'PPp')}
-                      </p>
-                      {call.recordingUrl && (
-                        <div className="mt-2">
-                          <audio
-                            controls
-                            className="w-full h-8"
-                            style={{ maxHeight: '32px' }}
-                          >
-                            <source src={call.recordingUrl} type="audio/webm" />
-                            Your browser does not support audio playback.
-                          </audio>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Remote audio element for live calls - hidden but playing */}
-      <audio 
-        ref={audioRef} 
-        autoPlay 
-        playsInline 
-        controls={false}
-        className="hidden" 
-      />
+      )}
     </div>
   );
 }

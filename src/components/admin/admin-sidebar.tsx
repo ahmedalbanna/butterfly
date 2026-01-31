@@ -21,19 +21,19 @@ const navigation = [
     icon: LayoutDashboard
   },
   {
-    name: 'Voice Calls',
-    href: '/admin/calls',
-    icon: Phone
-  },
-  {
     name: 'Live Chat',
-    href: '/admin/chat',
+    href: '/admin/live-chat',
     icon: MessageSquare
   },
   {
     name: 'Messages',
     href: '/admin/messages',
     icon: MessageSquare
+  },
+  {
+    name: 'Voice Calls',
+    href: '/admin/calls',
+    icon: Phone
   },
   {
     name: 'Orders',
