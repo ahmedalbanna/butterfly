@@ -29,6 +29,9 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   const callStartTimeRef = useRef<number | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Track if call was ever connected
+  const wasConnectedRef = useRef(false);
+
   // Initialize WebRTC hook only when we have a callId
   const webrtcEnabled = callId !== null;
   const webrtc = useWebRTCCall({
@@ -38,6 +41,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
       console.log('[Voice Call] Status changed:', status);
       
       if (status === 'connected') {
+        wasConnectedRef.current = true;
         toast({
           title: "Connected to Admin",
           description: "You are now in a live voice call with our team.",
@@ -50,14 +54,14 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
           }
         }, 1000);
       } else if (status === 'ended') {
-        handleCallEnd();
+        handleCallEnd(wasConnectedRef.current);
       } else if (status === 'error') {
         toast({
           title: "Call Failed",
           description: "Failed to connect. Please try again.",
           variant: "destructive",
         });
-        handleCallEnd();
+        handleCallEnd(wasConnectedRef.current);
       }
     },
     onError: (error) => {
@@ -70,7 +74,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     },
   });
 
-  const handleCallEnd = () => {
+  const handleCallEnd = (wasConnected: boolean = false) => {
     // Stop duration timer
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
@@ -78,14 +82,24 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Update call session in database
-    if (callId && callStartTimeRef.current) {
-      const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+    if (callId) {
+      let status = 'ended';
+      let duration = null;
+
+      // If call was connected, calculate duration
+      if (wasConnected && callStartTimeRef.current) {
+        duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+      } else if (!wasConnected) {
+        // If customer cancels before admin answers, mark as missed
+        status = 'missed';
+      }
+
       fetch('/api/calls/session', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           callId,
-          status: 'ended',
+          status,
           duration,
         }),
       });
@@ -149,7 +163,8 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     if (webrtcEnabled) {
       webrtc.endCall();
     }
-    handleCallEnd();
+    handleCallEnd(wasConnectedRef.current);
+    wasConnectedRef.current = false;
   };
 
   const toggleMute = () => {

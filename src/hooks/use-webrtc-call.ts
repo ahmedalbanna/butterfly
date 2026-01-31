@@ -22,10 +22,13 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const signalingPollingRef = useRef<NodeJS.Timeout | null>(null);
   const lastSignalingTimestampRef = useRef<number>(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   // Update status and notify
   const updateStatus = useCallback((newStatus: CallStatus) => {
@@ -119,6 +122,59 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     }
   }, [sendSignalingMessage, updateStatus, handleError]);
 
+  // Start recording
+  const startRecording = useCallback((stream: MediaStream) => {
+    try {
+      // Create media recorder for the mixed stream (local + remote)
+      const options = { mimeType: 'audio/webm' };
+      const mediaRecorder = new MediaRecorder(stream, options);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // Create blob from recorded chunks
+        const blob = new Blob(recordedChunksRef.current, { type: 'audio/webm' });
+        recordedChunksRef.current = [];
+
+        // Upload recording
+        const formData = new FormData();
+        formData.append('callId', callId);
+        formData.append('audio', blob);
+
+        try {
+          await fetch('/api/calls/recording', {
+            method: 'POST',
+            body: formData,
+          });
+          console.log('[WebRTC] Recording uploaded successfully');
+        } catch (error) {
+          console.error('[WebRTC] Failed to upload recording:', error);
+        }
+      };
+
+      mediaRecorder.start(1000); // Collect data every second
+      mediaRecorderRef.current = mediaRecorder;
+      setIsRecording(true);
+      console.log('[WebRTC] Recording started');
+    } catch (error) {
+      console.error('[WebRTC] Failed to start recording:', error);
+    }
+  }, [callId]);
+
+  // Stop recording
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+      setIsRecording(false);
+      console.log('[WebRTC] Recording stopped');
+    }
+  }, [isRecording]);
+
   // Initialize peer connection
   const initializePeerConnection = useCallback(() => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
@@ -134,7 +190,8 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     // Handle remote stream
     pc.ontrack = (event) => {
       console.log('[WebRTC] Received remote stream');
-      setRemoteStream(event.streams[0]);
+      const remoteMediaStream = event.streams[0];
+      setRemoteStream(remoteMediaStream);
     };
 
     // Handle connection state changes
@@ -143,13 +200,29 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       
       if (pc.connectionState === 'connected') {
         updateStatus('connected');
+        
+        // Start recording when connected (mix local and remote streams)
+        if (localStream && remoteStream) {
+          const audioContext = new AudioContext();
+          const destination = audioContext.createMediaStreamDestination();
+          
+          // Add local stream
+          const localSource = audioContext.createMediaStreamSource(localStream);
+          localSource.connect(destination);
+          
+          // Add remote stream
+          const remoteSource = audioContext.createMediaStreamSource(remoteStream);
+          remoteSource.connect(destination);
+          
+          startRecording(destination.stream);
+        }
       } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
         handleError('Connection failed or disconnected');
       }
     };
 
     return pc;
-  }, [sendSignalingMessage, updateStatus, handleError]);
+  }, [sendSignalingMessage, updateStatus, handleError, startRecording, localStream, remoteStream]);
 
   // Start the call (customer initiates)
   const startCall = useCallback(async () => {
@@ -232,6 +305,9 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
 
   // End the call
   const endCall = useCallback(() => {
+    // Stop recording first
+    stopRecording();
+
     // Send end signal
     if (status !== 'ended') {
       sendSignalingMessage('call-ended', {});
@@ -260,7 +336,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
 
     // Cleanup signaling messages
     fetch(`/api/calls/signal?callId=${callId}`, { method: 'DELETE' });
-  }, [callId, localStream, status, sendSignalingMessage, updateStatus]);
+  }, [callId, localStream, status, sendSignalingMessage, updateStatus, stopRecording]);
 
   // Toggle mute
   const toggleMute = useCallback(() => {
@@ -287,6 +363,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     localStream,
     remoteStream,
     isMuted,
+    isRecording,
     startCall,
     answerCall,
     endCall,

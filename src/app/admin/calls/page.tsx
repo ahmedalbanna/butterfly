@@ -75,9 +75,29 @@ export default function AdminCallsPage() {
   // Play remote audio stream
   useEffect(() => {
     if (webrtc.remoteStream && audioRef.current) {
+      console.log('[Admin Call] Setting remote stream to audio element');
       audioRef.current.srcObject = webrtc.remoteStream;
-      audioRef.current.play().catch(e => console.error('Failed to play audio:', e));
+      
+      // Ensure audio plays (browser autoplay policy)
+      const playAudio = async () => {
+        try {
+          await audioRef.current?.play();
+          console.log('[Admin Call] Remote audio playing');
+        } catch (error) {
+          console.error('[Admin Call] Failed to play audio:', error);
+          // Retry after user interaction
+          setTimeout(playAudio, 1000);
+        }
+      };
+      
+      playAudio();
     }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
+      }
+    };
   }, [webrtc.remoteStream]);
 
   const loadData = async () => {
@@ -359,9 +379,21 @@ export default function AdminCallsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-neutral-500 mb-1">
                         {format(new Date(call.startedAt), 'PPp')}
                       </p>
+                      {call.recordingUrl && (
+                        <div className="mt-2">
+                          <audio
+                            controls
+                            className="w-full h-8"
+                            style={{ maxHeight: '32px' }}
+                          >
+                            <source src={call.recordingUrl} type="audio/webm" />
+                            Your browser does not support audio playback.
+                          </audio>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -371,8 +403,14 @@ export default function AdminCallsPage() {
         </Card>
       </div>
 
-      {/* Remote audio element */}
-      <audio ref={audioRef} autoPlay className="hidden" />
+      {/* Remote audio element for live calls - hidden but playing */}
+      <audio 
+        ref={audioRef} 
+        autoPlay 
+        playsInline 
+        controls={false}
+        className="hidden" 
+      />
     </div>
   );
 }

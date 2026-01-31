@@ -25,9 +25,29 @@ export function VoiceCallOverlay() {
   // Play remote audio stream
   useEffect(() => {
     if (remoteStream && audioRef.current) {
+      console.log('[Voice Overlay] Setting remote stream to audio element');
       audioRef.current.srcObject = remoteStream;
-      audioRef.current.play().catch(e => console.error('Failed to play audio:', e));
+      
+      // Ensure audio plays (browser autoplay policy)
+      const playAudio = async () => {
+        try {
+          await audioRef.current?.play();
+          console.log('[Voice Overlay] Remote audio playing');
+        } catch (error) {
+          console.error('[Voice Overlay] Failed to play audio:', error);
+          // Retry after user interaction
+          setTimeout(playAudio, 1000);
+        }
+      };
+      
+      playAudio();
     }
+    
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
+      }
+    };
   }, [remoteStream]);
 
   // Format duration as MM:SS
@@ -91,10 +111,12 @@ export function VoiceCallOverlay() {
           </button>
         </div>
 
-        {/* Remote audio element */}
+        {/* Remote audio element - hidden but playing */}
         <audio 
           ref={audioRef}
           autoPlay
+          playsInline
+          controls={false}
           className="hidden"
         />
       </div>
@@ -191,10 +213,12 @@ export function VoiceCallOverlay() {
         WebRTC Encrypted Connection
       </p>
 
-      {/* Remote audio element */}
+      {/* Remote audio element - hidden but playing */}
       <audio 
         ref={audioRef}
         autoPlay
+        playsInline
+        controls={false}
         className="hidden"
       />
     </div>
