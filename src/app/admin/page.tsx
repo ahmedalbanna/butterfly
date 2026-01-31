@@ -1,15 +1,23 @@
 import { getAllProductsForAdmin } from '@/app/actions/admin-products';
 import { getCategoriesWithCounts } from '@/app/actions/categories';
 import { getOrderStats } from '@/app/actions/admin-orders';
-import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign } from 'lucide-react';
+import { getUnreadMessageCount, getAllMessages } from '@/app/actions/messages';
+import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign, MessageSquare, Mail } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
 
 export default async function AdminDashboard() {
-  const [products, categories, orderStats] = await Promise.all([
+  const [products, categories, orderStats, unreadCount, messagesResult] = await Promise.all([
     getAllProductsForAdmin(),
     getCategoriesWithCounts(),
-    getOrderStats()
+    getOrderStats(),
+    getUnreadMessageCount(),
+    getAllMessages()
   ]);
+  
+  const recentMessages = messagesResult.messages?.slice(0, 5) || [];
 
   const stats = [
     {
@@ -34,11 +42,12 @@ export default async function AdminDashboard() {
       color: 'text-primary'
     },
     {
-      title: 'Revenue',
-      value: `$${orderStats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
-      description: 'Total revenue',
-      color: 'text-green-400'
+      title: 'Messages',
+      value: unreadCount.count,
+      icon: MessageSquare,
+      description: 'Unread messages',
+      color: 'text-orange-400',
+      link: '/admin/messages'
     }
   ];
 
@@ -54,25 +63,30 @@ export default async function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const CardWrapper = stat.link ? Link : 'div';
+          const cardProps = stat.link ? { href: stat.link } : {};
+          
           return (
-            <Card key={stat.title} className="bg-black/40 border-white/10 hover:border-primary/30 transition-all duration-300 group">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-white/60 uppercase tracking-wider">
-                  {stat.title}
-                </CardTitle>
-                <Icon className={`w-5 h-5 ${stat.color} group-hover:scale-110 transition-transform`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-headline font-bold text-white mb-1">{stat.value}</div>
-                <p className="text-xs text-white/40">{stat.description}</p>
-              </CardContent>
-            </Card>
+            <CardWrapper key={stat.title} {...cardProps}>
+              <Card className="bg-black/40 border-white/10 hover:border-primary/30 transition-all duration-300 group cursor-pointer">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-white/60 uppercase tracking-wider">
+                    {stat.title}
+                  </CardTitle>
+                  <Icon className={`w-5 h-5 ${stat.color} group-hover:scale-110 transition-transform`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-headline font-bold text-white mb-1">{stat.value}</div>
+                  <p className="text-xs text-white/40">{stat.description}</p>
+                </CardContent>
+              </Card>
+            </CardWrapper>
           );
         })}
       </div>
 
       {/* Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Categories Overview */}
         <Card className="bg-black/40 border-white/10">
           <CardHeader>
@@ -125,6 +139,50 @@ export default async function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Messages */}
+        <Card className="bg-black/40 border-white/10">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-headline italic text-white flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              Recent Messages
+            </CardTitle>
+            {unreadCount.count > 0 && (
+              <Badge variant="default" className="bg-primary">{unreadCount.count} new</Badge>
+            )}
+          </CardHeader>
+          <CardContent>
+            {recentMessages.length === 0 ? (
+              <div className="text-center py-8 text-white/40">No messages yet</div>
+            ) : (
+              <div className="space-y-3">
+                {recentMessages.map((msg: any) => (
+                  <Link key={msg.id} href={`/admin/messages/${msg.id}`}>
+                    <div className="p-3 rounded-sm bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-headline text-white text-sm line-clamp-1">{msg.subject}</p>
+                          {msg.status === 'unread' && (
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-white/60 mb-1">{msg.customerName}</p>
+                      <p className="text-[10px] text-white/40">
+                        {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+                <Link href="/admin/messages">
+                  <div className="text-center py-2 text-primary hover:text-primary/80 text-sm transition-colors cursor-pointer">
+                    View all messages →
+                  </div>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Mail, Package, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Mail, Package, ArrowRight, MessageCircle } from 'lucide-react';
 
 type OrderConfirmationProps = {
   orderId: string;
@@ -82,6 +82,16 @@ export function OrderConfirmation({
           </Button>
         </Link>
 
+        <Link href={`/contact?orderId=${orderId}`} className="w-full">
+          <Button
+            variant="outline"
+            className="w-full h-12 border-white/20 text-white/80 hover:border-primary hover:text-primary rounded-none uppercase tracking-widest font-bold text-sm transition-all duration-300"
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Need Help with This Order?
+          </Button>
+        </Link>
+
         <Link href="/" className="w-full">
           <Button className="w-full h-12 bg-primary hover:bg-white hover:text-primary text-white rounded-none uppercase tracking-widest font-bold text-sm transition-all duration-300">
             Continue Shopping
@@ -92,7 +102,7 @@ export function OrderConfirmation({
       {/* Support Info */}
       <p className="text-white/40 text-xs">
         Have questions? Your order number is <span className="text-primary font-mono">{orderId.substring(0, 8)}</span> for reference. 
-        Contact our concierge for any assistance.
+        Our team is here to assist you.
       </p>
     </div>
   );

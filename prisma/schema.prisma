@@ -104,7 +104,8 @@ model Order {
   updatedAt       DateTime    @updatedAt
 
   // Relations
-  items OrderItem[]
+  items    OrderItem[]
+  messages CustomerMessage[]
 
   @@index([userId])
   @@index([status])
@@ -136,5 +137,42 @@ model ChatSession {
 
   @@index([userId])
   @@index([sessionId])
+  @@index([createdAt])
+}
+
+// Customer Messages (Contact/Support System)
+model CustomerMessage {
+  id            String         @id @default(cuid())
+  customerName  String
+  customerEmail String
+  customerPhone String?
+  subject       String
+  message       String         @db.Text
+  orderId       String?
+  status        String         @default("unread") // unread, read, replied, resolved
+  priority      String         @default("normal") // low, normal, high, urgent
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  order   Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  replies MessageReply[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([orderId])
+  @@index([createdAt])
+  @@index([customerEmail])
+}
+
+model MessageReply {
+  id        String          @id @default(cuid())
+  messageId String
+  message   CustomerMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  sender    String          // "customer" or "admin"
+  content   String          @db.Text
+  createdAt DateTime        @default(now())
+
+  @@index([messageId])
   @@index([createdAt])
 }

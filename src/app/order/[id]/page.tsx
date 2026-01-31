@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Package, Truck, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Truck, CheckCircle2, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -178,9 +178,10 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
           <p className="text-sm text-blue-300 mb-4">
             Have questions about your order? Contact our concierge team.
           </p>
-          <Link href="/">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-none uppercase tracking-widest text-xs px-6">
-              Contact Support
+          <Link href={`/contact?orderId=${order.id}`}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-none uppercase tracking-widest text-xs px-6 gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Contact About This Order
             </Button>
           </Link>
         </div>

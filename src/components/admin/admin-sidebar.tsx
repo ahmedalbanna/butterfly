@@ -9,7 +9,8 @@ import {
   FolderTree, 
   ShoppingCart, 
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  MessageSquare
 } from 'lucide-react';
 
 const navigation = [
@@ -32,6 +33,11 @@ const navigation = [
     name: 'Orders',
     href: '/admin/orders',
     icon: ShoppingCart
+  },
+  {
+    name: 'Messages',
+    href: '/admin/messages',
+    icon: MessageSquare
   }
 ];
 
