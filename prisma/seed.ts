@@ -160,6 +160,186 @@ const productsData = [
       "https://picsum.photos/seed/lux8alt/800/800"
     ],
     featured: false,
+  },
+  {
+    id: 'p9',
+    name: 'Silver Stud Earrings',
+    categoryId: 'cat1',
+    price: 95,
+    description: 'Timeless sterling silver studs. Perfect everyday elegance.',
+    materials: '925 Sterling Silver',
+    care: 'Store in a dry place away from moisture.',
+    image: PlaceHolderImages.find(img => img.id === 'jewelry-2')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'jewelry-2')?.imageUrl || '',
+      "https://picsum.photos/seed/lux9/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p10',
+    name: 'Gold Chain Bracelet',
+    categoryId: 'cat1',
+    price: 380,
+    description: 'Delicate gold-plated chain with a timeless design.',
+    materials: 'Gold-Plated Sterling Silver',
+    care: 'Avoid water and harsh chemicals.',
+    image: PlaceHolderImages.find(img => img.id === 'jewelry-3')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'jewelry-3')?.imageUrl || '',
+      "https://picsum.photos/seed/lux10/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p11',
+    name: 'Sapphire Drop Pendant',
+    categoryId: 'cat1',
+    price: 765,
+    description: 'Elegant sapphire drop pendant set in white gold.',
+    materials: '14k White Gold, 1ct Sapphire',
+    care: 'Professional cleaning every 6 months.',
+    image: PlaceHolderImages.find(img => img.id === 'jewelry-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'jewelry-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux11/800/800"
+    ],
+    featured: true,
+  },
+  {
+    id: 'p12',
+    name: 'Black Leather Watch',
+    categoryId: 'cat2',
+    price: 450,
+    description: 'Sleek design with black leather strap and minimalist dial.',
+    materials: 'Stainless Steel, Black Leather Strap',
+    care: 'Water resistant to 30m. Service every 5 years.',
+    image: PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux12/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p13',
+    name: 'Chronograph Steel Watch',
+    categoryId: 'cat2',
+    price: 620,
+    description: 'Precision chronograph with steel bracelet and three sub-dials.',
+    materials: 'Stainless Steel, Sapphire Crystal',
+    care: 'Water resistant to 100m. Service every 3 years.',
+    image: PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux13/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p14',
+    name: 'Gold Dress Watch',
+    categoryId: 'cat2',
+    price: 950,
+    description: 'Sophisticated dress watch in polished gold with elegant dial.',
+    materials: '18k Gold Plated Steel, Leather Strap',
+    care: 'Water resistant to 50m. Service every 4 years.',
+    image: PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'watch-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux14/800/800"
+    ],
+    featured: true,
+  },
+  {
+    id: 'p15',
+    name: 'Structured Leather Tote',
+    categoryId: 'cat3',
+    price: 890,
+    description: 'Spacious tote crafted from premium leather with multiple compartments.',
+    materials: 'Full-Grain Leather, Suede Lining',
+    care: 'Condition monthly with leather care cream.',
+    image: PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux15/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p16',
+    name: 'Crossbody Shoulder Bag',
+    categoryId: 'cat3',
+    price: 520,
+    description: 'Sleek crossbody bag perfect for modern living.',
+    materials: 'Napa Leather, Gold Hardware',
+    care: 'Treat with leather conditioner occasionally.',
+    image: PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux16/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p17',
+    name: 'Evening Frame Bag',
+    categoryId: 'cat3',
+    price: 750,
+    description: 'Vintage-inspired frame bag with gold clasp and chain strap.',
+    materials: 'Italian Leather, Gold-Plated Frame',
+    care: 'Wipe with soft cloth. Store in dust bag.',
+    image: PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'bag-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux17/800/800"
+    ],
+    featured: true,
+  },
+  {
+    id: 'p18',
+    name: 'Black Sunglasses Classic',
+    categoryId: 'cat4',
+    price: 145,
+    description: 'Iconic black frame sunglasses with polarized lenses.',
+    materials: 'Acetate Frame, Polarized Glass Lenses',
+    care: 'Use provided microfiber cloth for cleaning.',
+    image: PlaceHolderImages.find(img => img.id === 'sunglasses-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'sunglasses-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux18/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p19',
+    name: 'Geometric Accessory Scarf',
+    categoryId: 'cat4',
+    price: 155,
+    description: 'Modern geometric patterns on premium silk blend.',
+    materials: '60% Silk, 40% Cotton',
+    care: 'Hand wash in cold water. Lay flat to dry.',
+    image: PlaceHolderImages.find(img => img.id === 'scarf-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'scarf-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux19/800/800"
+    ],
+    featured: false,
+  },
+  {
+    id: 'p20',
+    name: 'Leather Gloves',
+    categoryId: 'cat4',
+    price: 120,
+    description: 'Soft Italian leather gloves with silk lining for comfort.',
+    materials: 'Italian Leather, Silk Lining',
+    care: 'Wipe with damp cloth. Air dry naturally.',
+    image: PlaceHolderImages.find(img => img.id === 'scarf-1')?.imageUrl || '',
+    images: [
+      PlaceHolderImages.find(img => img.id === 'scarf-1')?.imageUrl || '',
+      "https://picsum.photos/seed/lux20/800/800"
+    ],
+    featured: false,
   }
 ];
 
@@ -168,6 +348,10 @@ async function main() {
 
   // Clear existing data
   console.log('🗑️  Clearing existing data...');
+  // Clear OrderItems first (they reference Products)
+  await prisma.orderItem.deleteMany();
+  // Then clear Orders and Products
+  await prisma.order.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
 
