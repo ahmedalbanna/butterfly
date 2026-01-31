@@ -3,45 +3,84 @@
 
 import { useVoiceCall } from '@/context/voice-call-context';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Phone, Volume2, VolumeX, Minimize2, Maximize2, X } from 'lucide-react';
+import { Phone, Volume2, VolumeX, Minimize2, X, Radio } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 export function VoiceCallOverlay() {
   const { 
     isCalling, 
-    isCallConnecting, 
+    callStatus,
     isMinimized, 
-    audioUrl, 
     isMuted, 
-    setIsMuted, 
+    callDuration,
+    remoteStream,
     setIsMinimized,
-    endCall 
+    endCall,
+    toggleMute,
   } = useVoiceCall();
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Play remote audio stream
   useEffect(() => {
-    if (!isCalling) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+    if (remoteStream && audioRef.current) {
+      audioRef.current.srcObject = remoteStream;
+      audioRef.current.play().catch(e => console.error('Failed to play audio:', e));
     }
-  }, [isCalling]);
+  }, [remoteStream]);
+
+  // Format duration as MM:SS
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Get status text
+  const getStatusText = () => {
+    switch (callStatus) {
+      case 'connecting':
+        return 'Connecting...';
+      case 'ringing':
+        return 'Calling Admin...';
+      case 'connected':
+        return `On Call - ${formatDuration(callDuration)}`;
+      case 'ended':
+        return 'Call Ended';
+      case 'error':
+        return 'Connection Failed';
+      default:
+        return 'Initializing...';
+    }
+  };
 
   if (!isCalling) return null;
 
-  // وضع التصغير (الفقاعة العائمة) - تم تحديث الموقع لتجنب التداخل مع المحادثة
+  // Minimized view (floating bubble)
   if (isMinimized) {
     return (
       <div className="fixed bottom-6 right-24 md:bottom-12 md:right-32 z-[100] animate-in slide-in-from-bottom-10 duration-500">
         <div className="relative group">
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
+          {callStatus === 'connected' && (
+            <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping opacity-50" />
+          )}
           <button 
             onClick={() => setIsMinimized(false)}
-            className="relative w-16 h-16 rounded-full bg-black border-2 border-primary/50 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:scale-110 transition-transform duration-300"
+            className={cn(
+              "relative w-16 h-16 rounded-full bg-black border-2 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:scale-110 transition-transform duration-300",
+              callStatus === 'connected' ? "border-green-400/50" : "border-primary/50"
+            )}
           >
-            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <Phone className={cn(
+              "w-6 h-6",
+              callStatus === 'connected' ? "text-green-400 animate-pulse" : "text-primary animate-pulse"
+            )} />
+            {callStatus === 'connected' && (
+              <span className="absolute -bottom-6 text-xs text-white/60">
+                {formatDuration(callDuration)}
+              </span>
+            )}
           </button>
           
           <button 
@@ -52,23 +91,19 @@ export function VoiceCallOverlay() {
           </button>
         </div>
 
-        {audioUrl && (
-          <audio 
-            ref={audioRef}
-            autoPlay 
-            muted={isMuted}
-            onEnded={endCall}
-            src={audioUrl}
-            className="hidden"
-          />
-        )}
+        {/* Remote audio element */}
+        <audio 
+          ref={audioRef}
+          autoPlay
+          className="hidden"
+        />
       </div>
     );
   }
 
-  // وضع العرض الكامل (السينمائي)
+  // Full screen view
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in duration-500 box-border">
+    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center animate-in fade-in duration-500">
       <style jsx>{`
         @keyframes pulse-ring {
           0% { transform: scale(0.8); opacity: 0.5; }
@@ -79,7 +114,7 @@ export function VoiceCallOverlay() {
         }
       `}</style>
 
-      {/* زر التصغير في الأعلى */}
+      {/* Minimize button */}
       <div className="absolute top-8 right-8 flex gap-4">
         <Button 
           variant="ghost" 
@@ -92,30 +127,54 @@ export function VoiceCallOverlay() {
       </div>
 
       <div className="relative mb-12">
-        <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />
-        <div className="relative w-32 h-32 md:w-48 md:h-48 rounded-full border-2 border-primary/50 flex items-center justify-center bg-black">
-          <Sparkles className="w-12 h-12 md:w-20 md:h-20 text-primary animate-pulse" />
+        {callStatus === 'connected' && (
+          <div className="absolute inset-0 rounded-full bg-green-400/20 animate-pulse-ring" />
+        )}
+        {(callStatus === 'ringing' || callStatus === 'connecting') && (
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-pulse-ring" />
+        )}
+        <div className={cn(
+          "relative w-32 h-32 md:w-48 md:h-48 rounded-full border-2 flex items-center justify-center bg-black",
+          callStatus === 'connected' ? "border-green-400/50" : "border-primary/50"
+        )}>
+          {callStatus === 'connected' ? (
+            <Radio className="w-12 h-12 md:w-20 md:h-20 text-green-400 animate-pulse" />
+          ) : (
+            <Phone className={cn(
+              "w-12 h-12 md:w-20 md:h-20 animate-pulse",
+              callStatus === 'error' ? "text-red-400" : "text-primary"
+            )} />
+          )}
         </div>
       </div>
       
       <div className="text-center space-y-4 mb-20 px-6 max-w-md">
-        <h3 className="text-2xl md:text-4xl font-headline italic text-white">Luxe Stylist</h3>
-        <p className="text-primary font-bold uppercase tracking-[0.3em] text-[10px] md:text-xs">
-          {isCallConnecting ? "Establishing Secure Line..." : "On Call - Live Consultation"}
+        <h3 className="text-2xl md:text-4xl font-headline italic text-white">Live Admin Call</h3>
+        <p className={cn(
+          "font-bold uppercase tracking-[0.3em] text-[10px] md:text-xs",
+          callStatus === 'connected' ? "text-green-400" : "text-primary"
+        )}>
+          {getStatusText()}
         </p>
+        {callStatus === 'error' && (
+          <p className="text-red-400 text-sm">
+            Please check your microphone permissions and try again
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-8 md:gap-12">
         <Button 
-          onClick={() => setIsMuted(!isMuted)}
+          onClick={toggleMute}
           variant="outline" 
-          size="icon" 
+          size="icon"
+          disabled={callStatus !== 'connected'}
           className={cn(
             "w-14 h-14 md:w-20 md:h-20 rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all",
-            isMuted && "bg-primary/20 border-primary/40"
+            isMuted && "bg-red-500/20 border-red-500/40"
           )}
         >
-          {isMuted ? <VolumeX className="w-6 h-6 md:w-8 md:h-8 text-primary" /> : <Volume2 className="w-6 h-6 md:w-8 md:h-8" />}
+          {isMuted ? <VolumeX className="w-6 h-6 md:w-8 md:h-8 text-red-400" /> : <Volume2 className="w-6 h-6 md:w-8 md:h-8" />}
         </Button>
         
         <Button 
@@ -129,19 +188,15 @@ export function VoiceCallOverlay() {
       </div>
 
       <p className="absolute bottom-12 text-white/20 uppercase tracking-[0.5em] text-[8px] font-bold">
-        Secure Encrypted Line
+        WebRTC Encrypted Connection
       </p>
 
-      {audioUrl && (
-        <audio 
-          ref={audioRef}
-          autoPlay 
-          muted={isMuted}
-          onEnded={endCall}
-          src={audioUrl}
-          className="hidden"
-        />
-      )}
+      {/* Remote audio element */}
+      <audio 
+        ref={audioRef}
+        autoPlay
+        className="hidden"
+      />
     </div>
   );
 }

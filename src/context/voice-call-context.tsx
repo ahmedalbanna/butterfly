@@ -1,66 +1,182 @@
 "use client"
 
-import React, { createContext, useContext, useState, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useWebRTCCall, CallStatus } from '@/hooks/use-webrtc-call';
 
 type VoiceCallContextType = {
   isCalling: boolean;
-  isCallConnecting: boolean;
+  callStatus: CallStatus;
   isMinimized: boolean;
-  audioUrl: string | null;
   isMuted: boolean;
-  setIsMuted: (muted: boolean) => void;
+  callDuration: number;
+  remoteStream: MediaStream | null;
   setIsMinimized: (minimized: boolean) => void;
-  startCall: (product: { name: string; materials: string }) => Promise<void>;
+  startCall: () => Promise<void>;
   endCall: () => void;
+  toggleMute: () => void;
 };
 
 const VoiceCallContext = createContext<VoiceCallContextType | undefined>(undefined);
 
 export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   const [isCalling, setIsCalling] = useState(false);
-  const [isCallConnecting, setIsCallConnecting] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [callId, setCallId] = useState<string | null>(null);
+  const [callDuration, setCallDuration] = useState(0);
   const { toast } = useToast();
+  
+  const callStartTimeRef = useRef<number | null>(null);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startCall = async (product: { name: string; materials: string }) => {
-    setIsCalling(true);
-    setIsCallConnecting(true);
-    setIsMinimized(false);
-    setAudioUrl(null);
-
-    // محاكاة وقت الاتصال قبل تشغيل التسجيل الثابت
-    setTimeout(() => {
-      setAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); 
-      setIsCallConnecting(false);
+  // Initialize WebRTC hook only when we have a callId
+  const webrtcEnabled = callId !== null;
+  const webrtc = useWebRTCCall({
+    callId: callId || 'dummy',
+    role: 'customer',
+    onStatusChange: (status) => {
+      console.log('[Voice Call] Status changed:', status);
       
+      if (status === 'connected') {
+        toast({
+          title: "Connected to Admin",
+          description: "You are now in a live voice call with our team.",
+        });
+        // Start duration timer
+        callStartTimeRef.current = Date.now();
+        durationIntervalRef.current = setInterval(() => {
+          if (callStartTimeRef.current) {
+            setCallDuration(Math.floor((Date.now() - callStartTimeRef.current) / 1000));
+          }
+        }, 1000);
+      } else if (status === 'ended') {
+        handleCallEnd();
+      } else if (status === 'error') {
+        toast({
+          title: "Call Failed",
+          description: "Failed to connect. Please try again.",
+          variant: "destructive",
+        });
+        handleCallEnd();
+      }
+    },
+    onError: (error) => {
+      console.error('[Voice Call] Error:', error);
       toast({
-        title: "Connected to Stylist",
-        description: `You are now listening to information about ${product.name}.`,
+        title: "Call Error",
+        description: error,
+        variant: "destructive",
       });
-    }, 2000);
+    },
+  });
+
+  const handleCallEnd = () => {
+    // Stop duration timer
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+      durationIntervalRef.current = null;
+    }
+
+    // Update call session in database
+    if (callId && callStartTimeRef.current) {
+      const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+      fetch('/api/calls/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callId,
+          status: 'ended',
+          duration,
+        }),
+      });
+    }
+
+    setIsCalling(false);
+    setIsMinimized(false);
+    setCallId(null);
+    setCallDuration(0);
+    callStartTimeRef.current = null;
+  };
+
+  const startCall = async () => {
+    try {
+      setIsCalling(true);
+      setIsMinimized(false);
+      setCallDuration(0);
+
+      toast({
+        title: "Initiating Call",
+        description: "Connecting to admin support...",
+      });
+
+      // Create call session
+      const response = await fetch('/api/calls/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerId: `customer-${Date.now()}`,
+          customerName: 'Guest Customer',
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.callId) {
+        setCallId(data.callId);
+        
+        // WebRTC will start after callId is set
+        // Need to wait for next render cycle
+        setTimeout(() => {
+          if (webrtcEnabled) {
+            webrtc.startCall();
+          }
+        }, 100);
+      } else {
+        throw new Error('Failed to create call session');
+      }
+    } catch (error) {
+      console.error('[Voice Call] Failed to start:', error);
+      toast({
+        title: "Call Failed",
+        description: "Failed to initiate call. Please try again.",
+        variant: "destructive",
+      });
+      setIsCalling(false);
+    }
   };
 
   const endCall = () => {
-    setIsCalling(false);
-    setIsCallConnecting(false);
-    setIsMinimized(false);
-    setAudioUrl(null);
+    if (webrtcEnabled) {
+      webrtc.endCall();
+    }
+    handleCallEnd();
   };
+
+  const toggleMute = () => {
+    if (webrtcEnabled) {
+      webrtc.toggleMute();
+    }
+  };
+
+  // Start WebRTC call when callId is set
+  useEffect(() => {
+    if (callId && webrtcEnabled && webrtc.status === 'idle') {
+      webrtc.startCall();
+    }
+  }, [callId]);
 
   return (
     <VoiceCallContext.Provider value={{ 
       isCalling, 
-      isCallConnecting, 
+      callStatus: webrtcEnabled ? webrtc.status : 'idle',
       isMinimized,
-      audioUrl, 
-      isMuted, 
-      setIsMuted, 
+      isMuted: webrtcEnabled ? webrtc.isMuted : false,
+      callDuration,
+      remoteStream: webrtcEnabled ? webrtc.remoteStream : null,
       setIsMinimized,
       startCall, 
-      endCall 
+      endCall,
+      toggleMute,
     }}>
       {children}
     </VoiceCallContext.Provider>

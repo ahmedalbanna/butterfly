@@ -10,7 +10,8 @@ import {
   ShoppingCart, 
   Sparkles,
   ArrowLeft,
-  MessageSquare
+  MessageSquare,
+  Phone
 } from 'lucide-react';
 
 const navigation = [
@@ -18,6 +19,11 @@ const navigation = [
     name: 'Dashboard',
     href: '/admin',
     icon: LayoutDashboard
+  },
+  {
+    name: 'Voice Calls',
+    href: '/admin/calls',
+    icon: Phone
   },
   {
     name: 'Live Chat',

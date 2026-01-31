@@ -2,22 +2,26 @@ import { getAllProductsForAdmin } from '@/app/actions/admin-products';
 import { getCategoriesWithCounts } from '@/app/actions/categories';
 import { getOrderStats } from '@/app/actions/admin-orders';
 import { getActiveChatCount, getActiveChatSessions } from '@/app/actions/messages';
-import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign, MessageSquare } from 'lucide-react';
+import { getIncomingCallCount, getActiveCalls } from '@/app/actions/calls';
+import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign, MessageSquare, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
 export default async function AdminDashboard() {
-  const [products, categories, orderStats, activeChatCount, chatSessionsResult] = await Promise.all([
+  const [products, categories, orderStats, activeChatCount, chatSessionsResult, incomingCallsCount, activeCallsResult] = await Promise.all([
     getAllProductsForAdmin(),
     getCategoriesWithCounts(),
     getOrderStats(),
     getActiveChatCount(),
-    getActiveChatSessions()
+    getActiveChatSessions(),
+    getIncomingCallCount(),
+    getActiveCalls()
   ]);
   
   const activeChats = chatSessionsResult.sessions?.slice(0, 5) || [];
+  const incomingCalls = activeCallsResult.calls?.filter((c: any) => c.status === 'ringing').slice(0, 5) || [];
 
   const stats = [
     {
@@ -42,6 +46,14 @@ export default async function AdminDashboard() {
       color: 'text-primary'
     },
     {
+      title: 'Incoming Calls',
+      value: incomingCallsCount.count,
+      icon: Phone,
+      description: 'Waiting to be answered',
+      color: 'text-orange-400',
+      link: '/admin/calls'
+    },
+    {
       title: 'Live Chats',
       value: activeChatCount.count,
       icon: MessageSquare,
@@ -60,7 +72,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           const CardWrapper = stat.link ? Link : 'div';
@@ -86,7 +98,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Recent Activity Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Categories Overview */}
         <Card className="bg-black/40 border-white/10">
           <CardHeader>
@@ -139,6 +151,48 @@ export default async function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Incoming Voice Calls */}
+        <Card className="bg-black/40 border-white/10">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-xl font-headline italic text-white flex items-center gap-2">
+              <Phone className="w-5 h-5 text-primary" />
+              Incoming Calls
+            </CardTitle>
+            {incomingCallsCount.count > 0 && (
+              <Badge variant="default" className="bg-orange-500 animate-pulse">{incomingCallsCount.count} ringing</Badge>
+            )}
+          </CardHeader>
+          <CardContent>
+            {incomingCalls.length === 0 ? (
+              <div className="text-center py-8 text-white/40">No incoming calls</div>
+            ) : (
+              <div className="space-y-3">
+                {incomingCalls.map((call: any) => (
+                  <Link key={call.id} href={`/admin/calls`}>
+                    <div className="p-3 rounded-sm bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer animate-pulse">
+                      <div className="flex items-start justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-headline text-white text-sm line-clamp-1">{call.customerName}</p>
+                          <div className="w-2 h-2 rounded-full bg-orange-400 animate-ping" />
+                        </div>
+                      </div>
+                      <p className="text-xs text-white/60 mb-1">Voice Call</p>
+                      <p className="text-[10px] text-white/40">
+                        {formatDistanceToNow(new Date(call.startedAt), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+                <Link href="/admin/calls">
+                  <div className="text-center py-2 text-primary hover:text-primary/80 text-sm transition-colors cursor-pointer">
+                    View all calls →
+                  </div>
+                </Link>
+              </div>
+            )}
           </CardContent>
         </Card>
 

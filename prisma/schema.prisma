@@ -197,3 +197,20 @@ model ActiveChatSession {
   @@index([adminConnected])
   @@index([lastActivity])
 }
+
+// Voice Call Sessions (WebRTC)
+model VoiceCallSession {
+  id           String    @id @default(cuid())
+  customerId   String    // Anonymous or guest ID
+  customerName String
+  status       String    @default("ringing") // ringing, active, ended, missed, declined
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  duration     Int?      // Call duration in seconds
+  adminId      String?   // Admin who answered
+  adminName    String?   // Name of admin who answered
+
+  @@index([status])
+  @@index([startedAt])
+  @@index([customerId])
+}
