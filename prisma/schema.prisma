@@ -209,6 +209,8 @@ model VoiceCallSession {
   duration     Int?      // Call duration in seconds
   adminId      String?   // Admin who answered
   adminName    String?   // Name of admin who answered
+  recordingUrl String?   // URL to recorded audio file
+  recordingSize Int?     // Recording file size in bytes
 
   @@index([status])
   @@index([startedAt])
