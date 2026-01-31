@@ -1,10 +1,10 @@
 'use server';
 
-import { createOrder, CreateOrderData } from './orders';
 import { z } from 'zod';
+import { createOrder, CreateOrderData } from './orders';
 
 // Validation schema for checkout form
-export const CheckoutFormSchema = z.object({
+const CheckoutFormSchema = z.object({
   customerName: z.string().min(2, 'Name must be at least 2 characters'),
   customerEmail: z.string().email('Invalid email address'),
   customerPhone: z.string().optional(),
@@ -12,7 +12,6 @@ export const CheckoutFormSchema = z.object({
   billingAddress: z.string().min(10, 'Please enter a complete address'),
   useSameAddress: z.boolean().optional(),
 });
-
 export type CheckoutFormData = z.infer<typeof CheckoutFormSchema>;
 
 export type CartItemForOrder = {

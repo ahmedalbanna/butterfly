@@ -8,11 +8,29 @@ datasource db {
   provider = "postgresql"
 }
 
+// Categories
+model Category {
+  id           String    @id @default(cuid())
+  name         String    @unique
+  slug         String    @unique
+  description  String?   @db.Text
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  products Product[]
+
+  @@index([slug])
+  @@index([displayOrder])
+}
+
 // Products
 model Product {
   id          String   @id @default(cuid())
   name        String
-  category    String   // Jewelry, Watches, Bags, Accessories
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   price       Float
   description String   @db.Text
   materials   String   @db.Text
@@ -28,7 +46,7 @@ model Product {
   orderItems OrderItem[]
   cartItems  CartItem[]
 
-  @@index([category])
+  @@index([categoryId])
   @@index([featured])
 }
 

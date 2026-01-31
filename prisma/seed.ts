@@ -8,11 +8,42 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const categoriesData = [
+  {
+    id: 'cat1',
+    name: 'Jewelry',
+    slug: 'jewelry',
+    description: 'Exquisite jewelry pieces crafted with precision and elegance',
+    displayOrder: 1
+  },
+  {
+    id: 'cat2',
+    name: 'Watches',
+    slug: 'watches',
+    description: 'Timeless timepieces that blend artistry with function',
+    displayOrder: 2
+  },
+  {
+    id: 'cat3',
+    name: 'Bags',
+    slug: 'bags',
+    description: 'Luxurious handbags and accessories for the discerning collector',
+    displayOrder: 3
+  },
+  {
+    id: 'cat4',
+    name: 'Accessories',
+    slug: 'accessories',
+    description: 'Refined accessories to complete your sophisticated look',
+    displayOrder: 4
+  }
+];
+
 const productsData = [
   {
     id: 'p1',
     name: 'Rose Gold Diamond Necklace',
-    category: 'Jewelry',
+    categoryId: 'cat1',
     price: 1250,
     description: 'A timeless piece featuring a brilliant round-cut diamond set in 18k rose gold. Elegant enough for special occasions, yet subtle for everyday luxury.',
     materials: '18k Rose Gold, 0.5ct Diamond (VVS1)',
@@ -28,7 +59,7 @@ const productsData = [
   {
     id: 'p2',
     name: 'Minimalist Gold Hoop Earrings',
-    category: 'Jewelry',
+    categoryId: 'cat1',
     price: 320,
     description: 'Crafted for modern simplicity, these thin gold hoops are lightweight and versatile.',
     materials: '14k Yellow Gold',
@@ -43,7 +74,7 @@ const productsData = [
   {
     id: 'p3',
     name: 'Classic Pearl Bracelet',
-    category: 'Jewelry',
+    categoryId: 'cat1',
     price: 450,
     description: 'Hand-selected freshwater pearls on a delicate silk cord with a rose gold clasp.',
     materials: 'Freshwater Pearls, Rose Gold Clasp',
@@ -58,7 +89,7 @@ const productsData = [
   {
     id: 'p4',
     name: 'Luxe Heritage Rose Watch',
-    category: 'Watches',
+    categoryId: 'cat2',
     price: 890,
     description: 'A masterpiece of horology. Features a sapphire crystal face and a precision Swiss movement.',
     materials: 'Stainless Steel with Rose Gold PVD, Sapphire Crystal',
@@ -73,7 +104,7 @@ const productsData = [
   {
     id: 'p5',
     name: 'Petite Leather Clutch',
-    category: 'Bags',
+    categoryId: 'cat3',
     price: 640,
     description: 'Handcrafted from Italian calfskin, this clutch features a minimalist design and a hidden magnetic closure.',
     materials: 'Full-grain Italian Leather, Satin Lining',
@@ -88,7 +119,7 @@ const productsData = [
   {
     id: 'p6',
     name: 'Tortoise Shell Frames',
-    category: 'Accessories',
+    categoryId: 'cat4',
     price: 210,
     description: 'Classic tortoise shell patterns with UV400 protection. A must-have for sunny days.',
     materials: 'Acetate, CR-39 Lenses',
@@ -103,7 +134,7 @@ const productsData = [
   {
     id: 'p7',
     name: 'Botanical Silk Scarf',
-    category: 'Accessories',
+    categoryId: 'cat4',
     price: 180,
     description: 'Hand-painted floral motifs on 100% pure mulberry silk.',
     materials: '100% Mulberry Silk',
@@ -118,7 +149,7 @@ const productsData = [
   {
     id: 'p8',
     name: 'Emerald Cut Ring',
-    category: 'Jewelry',
+    categoryId: 'cat1',
     price: 2100,
     description: 'A striking emerald-cut diamond ring that captures the light from every angle.',
     materials: 'Platinum, 1.2ct Lab-Grown Diamond',
@@ -136,8 +167,18 @@ async function main() {
   console.log('🌱 Seeding LuxeFinds database...');
 
   // Clear existing data
-  console.log('🗑️  Clearing existing products...');
+  console.log('🗑️  Clearing existing data...');
   await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+
+  // Seed categories first
+  console.log('📂 Creating categories...');
+  for (const category of categoriesData) {
+    await prisma.category.create({
+      data: category,
+    });
+    console.log(`✅ Created category: ${category.name}`);
+  }
 
   // Seed products
   console.log('📦 Creating products...');
@@ -145,10 +186,11 @@ async function main() {
     await prisma.product.create({
       data: product,
     });
-    console.log(`✅ Created: ${product.name}`);
+    console.log(`✅ Created product: ${product.name}`);
   }
 
   console.log('\n✨ Seeding completed successfully!');
+  console.log(`📊 Total categories: ${categoriesData.length}`);
   console.log(`📊 Total products: ${productsData.length}`);
 }
 

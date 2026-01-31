@@ -22,16 +22,22 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 /**
- * Get products by category
+ * Get products by category (accepts category ID or name)
  */
-export async function getProductsByCategory(category: string): Promise<Product[]> {
+export async function getProductsByCategory(categoryIdOrName: string): Promise<Product[]> {
   try {
-    if (category === 'All') {
+    if (categoryIdOrName === 'All') {
       return getProducts();
     }
     
+    // Try to find by ID first, then by name
     const products = await prisma.product.findMany({
-      where: { category },
+      where: {
+        OR: [
+          { categoryId: categoryIdOrName },
+          { category: { name: categoryIdOrName } }
+        ]
+      },
       orderBy: [
         { featured: 'desc' },
         { createdAt: 'desc' }

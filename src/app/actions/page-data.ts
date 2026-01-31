@@ -1,6 +1,7 @@
 'use server';
 
 import { getProducts, getProductById, getProductsByCategory, getFeaturedProducts } from './products';
+import { getCategories } from './categories';
 import { Product } from '@prisma/client';
 
 export type GroupedProducts = {
@@ -13,13 +14,15 @@ export type GroupedProducts = {
  */
 export async function getHomePageData(): Promise<GroupedProducts[]> {
   try {
-    const allProducts = await getProducts();
+    const [allProducts, categories] = await Promise.all([
+      getProducts(),
+      getCategories()
+    ]);
     
-    // Group by category
-    const categories = ['Jewelry', 'Watches', 'Bags', 'Accessories'];
+    // Group products by category using database categories
     const grouped = categories.map(category => ({
-      name: category,
-      products: allProducts.filter(p => p.category === category)
+      name: category.name,
+      products: allProducts.filter(p => p.categoryId === category.id)
     })).filter(group => group.products.length > 0);
     
     return grouped;

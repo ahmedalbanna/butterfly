@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getOrderById } from '@/app/actions/orders';
+import { getOrderForDisplay } from '@/app/actions/checkout';
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
   const order = await getOrderById(params.id);
