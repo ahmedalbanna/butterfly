@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function ChatOverlay() {
-  const { messages, isChatOpen, isTyping, closeChat, sendMessage } = useChat();
+  const { messages, isChatOpen, isTyping, connectionStatus, adminConnected, closeChat, sendMessage } = useChat();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -27,6 +27,32 @@ export function ChatOverlay() {
     await sendMessage(msg);
   };
 
+  const getStatusText = () => {
+    switch (connectionStatus) {
+      case 'connecting':
+        return 'Connecting...';
+      case 'waiting':
+        return 'Waiting for admin...';
+      case 'connected':
+        return 'Connected to admin';
+      default:
+        return 'Disconnected';
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return 'text-green-400';
+      case 'waiting':
+        return 'text-yellow-400';
+      case 'connecting':
+        return 'text-blue-400';
+      default:
+        return 'text-red-400';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[110] bg-black/98 backdrop-blur-3xl flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-500 box-border p-4 md:p-12">
       <div className="w-full max-w-4xl h-full flex flex-col bg-white/[0.02] border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative">
@@ -38,8 +64,10 @@ export function ChatOverlay() {
               <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" />
             </div>
             <div>
-              <h2 className="text-xl md:text-2xl font-headline italic text-white">Luxe Stylist</h2>
-              <p className="text-primary font-bold uppercase tracking-[0.2em] text-[8px] md:text-[10px]">Expert Fashion Consultation</p>
+              <h2 className="text-xl md:text-2xl font-headline italic text-white">Live Support</h2>
+              <p className={cn("font-bold uppercase tracking-[0.2em] text-[8px] md:text-[10px]", getStatusColor())}>
+                {getStatusText()}
+              </p>
             </div>
           </div>
           <Button 
@@ -60,22 +88,22 @@ export function ChatOverlay() {
                 key={msg.id} 
                 className={cn(
                   "flex gap-4 md:gap-8 animate-in slide-in-from-bottom-4 duration-500",
-                  msg.role === 'user' ? "flex-row-reverse" : "flex-row"
+                  msg.role === 'customer' ? "flex-row-reverse" : "flex-row"
                 )}
               >
                 <div className={cn(
                   "w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center shrink-0 border",
-                  msg.role === 'user' ? "bg-white/5 border-white/20" : "bg-primary/20 border-primary/40"
+                  msg.role === 'customer' ? "bg-white/5 border-white/20" : "bg-primary/20 border-primary/40"
                 )}>
-                  {msg.role === 'user' ? <User className="w-4 h-4 text-white/60" /> : <Bot className="w-4 h-4 text-primary" />}
+                  {msg.role === 'customer' ? <User className="w-4 h-4 text-white/60" /> : <Bot className="w-4 h-4 text-primary" />}
                 </div>
                 <div className={cn(
                   "flex-1 space-y-2",
-                  msg.role === 'user' ? "text-right" : "text-left"
+                  msg.role === 'customer' ? "text-right" : "text-left"
                 )}>
                   <p className={cn(
                     "text-sm md:text-lg leading-relaxed font-body",
-                    msg.role === 'user' ? "text-white/80" : "text-white italic"
+                    msg.role === 'customer' ? "text-white/80" : "text-white italic"
                   )}>
                     {msg.content}
                   </p>
@@ -125,7 +153,7 @@ export function ChatOverlay() {
       </div>
       
       <p className="mt-8 text-white/20 uppercase tracking-[0.5em] text-[8px] font-bold">
-        Personal Stylist AI Consultation
+        Live Admin Support
       </p>
     </div>
   );

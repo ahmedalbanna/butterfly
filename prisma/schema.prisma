@@ -149,20 +149,25 @@ model CustomerMessage {
   subject       String
   message       String         @db.Text
   orderId       String?
+  type          String         @default("form") // "form" or "chat"
+  isActive      Boolean        @default(false) // For live chat sessions
   status        String         @default("unread") // unread, read, replied, resolved
   priority      String         @default("normal") // low, normal, high, urgent
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   // Relations
-  order   Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  replies MessageReply[]
+  order              Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  replies            MessageReply[]
+  activeChatSession  ActiveChatSession?
 
   @@index([status])
   @@index([priority])
   @@index([orderId])
   @@index([createdAt])
   @@index([customerEmail])
+  @@index([type])
+  @@index([isActive])
 }
 
 model MessageReply {
@@ -175,4 +180,20 @@ model MessageReply {
 
   @@index([messageId])
   @@index([createdAt])
+}
+
+// Active Chat Sessions for WebSocket Management
+model ActiveChatSession {
+  id                String          @id @default(cuid())
+  messageId         String          @unique
+  message           CustomerMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  customerConnected Boolean         @default(false)
+  adminConnected    Boolean         @default(false)
+  adminName         String?         // Name of admin handling the chat
+  createdAt         DateTime        @default(now())
+  lastActivity      DateTime        @default(now())
+
+  @@index([customerConnected])
+  @@index([adminConnected])
+  @@index([lastActivity])
 }

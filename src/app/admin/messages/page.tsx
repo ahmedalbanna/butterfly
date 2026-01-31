@@ -40,6 +40,7 @@ export default function AdminMessagesPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [searchEmail, setSearchEmail] = useState('');
+  const [activeTab, setActiveTab] = useState<'all' | 'chats' | 'forms'>('all');
 
   useEffect(() => {
     loadMessages();
@@ -47,7 +48,7 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [messages, statusFilter, priorityFilter, searchEmail]);
+  }, [messages, statusFilter, priorityFilter, searchEmail, activeTab]);
 
   const loadMessages = async () => {
     setIsLoading(true);
@@ -60,6 +61,13 @@ export default function AdminMessagesPage() {
 
   const applyFilters = () => {
     let filtered = [...messages];
+
+    // Filter by tab
+    if (activeTab === 'chats') {
+      filtered = filtered.filter(msg => msg.type === 'chat');
+    } else if (activeTab === 'forms') {
+      filtered = filtered.filter(msg => msg.type === 'form');
+    }
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(msg => msg.status === statusFilter);
@@ -129,6 +137,9 @@ export default function AdminMessagesPage() {
     read: messages.filter(m => m.status === 'read').length,
     replied: messages.filter(m => m.status === 'replied').length,
     resolved: messages.filter(m => m.status === 'resolved').length,
+    activeChats: messages.filter(m => m.type === 'chat' && m.isActive).length,
+    totalChats: messages.filter(m => m.type === 'chat').length,
+    totalForms: messages.filter(m => m.type === 'form').length,
   };
 
   return (
@@ -140,11 +151,17 @@ export default function AdminMessagesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-neutral-900/50 border-primary/20">
           <CardHeader className="pb-3">
             <CardDescription className="text-neutral-400">Unread</CardDescription>
             <CardTitle className="text-3xl text-primary">{stats.unread}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card className="bg-neutral-900/50 border-green-500/20">
+          <CardHeader className="pb-3">
+            <CardDescription className="text-neutral-400">Active Chats</CardDescription>
+            <CardTitle className="text-3xl text-green-400">{stats.activeChats}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="bg-neutral-900/50 border-neutral-700">
@@ -165,6 +182,36 @@ export default function AdminMessagesPage() {
             <CardTitle className="text-3xl text-neutral-200">{stats.resolved}</CardTitle>
           </CardHeader>
         </Card>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        <Button
+          variant={activeTab === 'all' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('all')}
+          className="gap-2"
+        >
+          All Messages ({messages.length})
+        </Button>
+        <Button
+          variant={activeTab === 'chats' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('chats')}
+          className="gap-2"
+        >
+          Live Chats ({stats.totalChats})
+          {stats.activeChats > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 bg-green-500 text-white text-xs rounded-full">
+              {stats.activeChats} active
+            </span>
+          )}
+        </Button>
+        <Button
+          variant={activeTab === 'forms' ? 'default' : 'outline'}
+          onClick={() => setActiveTab('forms')}
+          className="gap-2"
+        >
+          Contact Forms ({stats.totalForms})
+        </Button>
       </div>
 
       {/* Filters */}
@@ -246,6 +293,16 @@ export default function AdminMessagesPage() {
                                 <h3 className="font-medium text-neutral-100 truncate">
                                   {message.subject}
                                 </h3>
+                                {message.type === 'chat' && (
+                                  <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                                    Chat
+                                  </Badge>
+                                )}
+                                {message.isActive && (
+                                  <Badge variant="outline" className="bg-green-500/10 text-green-400 border-green-500/20 animate-pulse">
+                                    Live
+                                  </Badge>
+                                )}
                                 {getStatusBadge(message.status)}
                                 {getPriorityBadge(message.priority)}
                               </div>

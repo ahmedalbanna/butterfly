@@ -337,3 +337,92 @@ export async function getMessagesByOrder(orderId: string) {
     };
   }
 }
+
+// Get all active chat sessions
+export async function getActiveChatSessions() {
+  try {
+    const sessions = await db.activeChatSession.findMany({
+      include: {
+        message: {
+          include: {
+            replies: {
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        lastActivity: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      sessions,
+    };
+  } catch (error) {
+    console.error('Failed to fetch active chat sessions:', error);
+    return {
+      success: false,
+      error: 'Failed to load chat sessions',
+      sessions: [],
+    };
+  }
+}
+
+// Close a chat session
+export async function closeChatSession(messageId: string) {
+  try {
+    // Update message to inactive
+    await db.customerMessage.update({
+      where: { id: messageId },
+      data: {
+        isActive: false,
+        status: 'resolved',
+      },
+    });
+
+    // Delete active chat session
+    await db.activeChatSession.deleteMany({
+      where: { messageId },
+    });
+
+    revalidatePath('/admin/messages');
+    revalidatePath(`/admin/messages/${messageId}`);
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error('Failed to close chat session:', error);
+    return {
+      success: false,
+      error: 'Failed to close chat session',
+    };
+  }
+}
+
+// Get active chat count
+export async function getActiveChatCount() {
+  try {
+    const count = await db.customerMessage.count({
+      where: {
+        type: 'chat',
+        isActive: true,
+      },
+    });
+
+    return {
+      success: true,
+      count,
+    };
+  } catch (error) {
+    console.error('Failed to fetch active chat count:', error);
+    return {
+      success: false,
+      count: 0,
+    };
+  }
+}
