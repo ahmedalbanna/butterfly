@@ -1,23 +1,23 @@
 import { getAllProductsForAdmin } from '@/app/actions/admin-products';
 import { getCategoriesWithCounts } from '@/app/actions/categories';
 import { getOrderStats } from '@/app/actions/admin-orders';
-import { getUnreadMessageCount, getAllMessages } from '@/app/actions/messages';
-import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign, MessageSquare, Mail } from 'lucide-react';
+import { getActiveChatCount, getActiveChatSessions } from '@/app/actions/messages';
+import { Package, FolderTree, ShoppingCart, TrendingUp, DollarSign, MessageSquare } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 
 export default async function AdminDashboard() {
-  const [products, categories, orderStats, unreadCount, messagesResult] = await Promise.all([
+  const [products, categories, orderStats, activeChatCount, chatSessionsResult] = await Promise.all([
     getAllProductsForAdmin(),
     getCategoriesWithCounts(),
     getOrderStats(),
-    getUnreadMessageCount(),
-    getAllMessages()
+    getActiveChatCount(),
+    getActiveChatSessions()
   ]);
   
-  const recentMessages = messagesResult.messages?.slice(0, 5) || [];
+  const activeChats = chatSessionsResult.sessions?.slice(0, 5) || [];
 
   const stats = [
     {
@@ -42,12 +42,12 @@ export default async function AdminDashboard() {
       color: 'text-primary'
     },
     {
-      title: 'Messages',
-      value: unreadCount.count,
+      title: 'Live Chats',
+      value: activeChatCount.count,
       icon: MessageSquare,
-      description: 'Unread messages',
-      color: 'text-orange-400',
-      link: '/admin/messages'
+      description: 'Active conversations',
+      color: 'text-green-400',
+      link: '/admin/chat'
     }
   ];
 
@@ -142,43 +142,43 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Messages */}
+        {/* Active Live Chats */}
         <Card className="bg-black/40 border-white/10">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-xl font-headline italic text-white flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-primary" />
-              Recent Messages
+              Active Live Chats
             </CardTitle>
-            {unreadCount.count > 0 && (
-              <Badge variant="default" className="bg-primary">{unreadCount.count} new</Badge>
+            {activeChatCount.count > 0 && (
+              <Badge variant="default" className="bg-green-500 animate-pulse">{activeChatCount.count} active</Badge>
             )}
           </CardHeader>
           <CardContent>
-            {recentMessages.length === 0 ? (
-              <div className="text-center py-8 text-white/40">No messages yet</div>
+            {activeChats.length === 0 ? (
+              <div className="text-center py-8 text-white/40">No active chats</div>
             ) : (
               <div className="space-y-3">
-                {recentMessages.map((msg: any) => (
-                  <Link key={msg.id} href={`/admin/messages/${msg.id}`}>
+                {activeChats.map((session: any) => (
+                  <Link key={session.id} href={`/admin/chat`}>
                     <div className="p-3 rounded-sm bg-white/5 hover:bg-white/10 transition-colors border border-white/5 cursor-pointer">
                       <div className="flex items-start justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-headline text-white text-sm line-clamp-1">{msg.subject}</p>
-                          {msg.status === 'unread' && (
-                            <div className="w-2 h-2 rounded-full bg-primary" />
+                          <p className="font-headline text-white text-sm line-clamp-1">{session.message.customerName}</p>
+                          {session.customerConnected && (
+                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                           )}
                         </div>
                       </div>
-                      <p className="text-xs text-white/60 mb-1">{msg.customerName}</p>
+                      <p className="text-xs text-white/60 mb-1">{session.message.customerEmail}</p>
                       <p className="text-[10px] text-white/40">
-                        {formatDistanceToNow(new Date(msg.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
                       </p>
                     </div>
                   </Link>
                 ))}
-                <Link href="/admin/messages">
+                <Link href="/admin/chat">
                   <div className="text-center py-2 text-primary hover:text-primary/80 text-sm transition-colors cursor-pointer">
-                    View all messages →
+                    View all chats →
                   </div>
                 </Link>
               </div>

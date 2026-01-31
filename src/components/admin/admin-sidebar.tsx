@@ -20,6 +20,21 @@ const navigation = [
     icon: LayoutDashboard
   },
   {
+    name: 'Live Chat',
+    href: '/admin/chat',
+    icon: MessageSquare
+  },
+  {
+    name: 'Messages',
+    href: '/admin/messages',
+    icon: MessageSquare
+  },
+  {
+    name: 'Orders',
+    href: '/admin/orders',
+    icon: ShoppingCart
+  },
+  {
     name: 'Products',
     href: '/admin/products',
     icon: Package
@@ -28,16 +43,6 @@ const navigation = [
     name: 'Categories',
     href: '/admin/categories',
     icon: FolderTree
-  },
-  {
-    name: 'Orders',
-    href: '/admin/orders',
-    icon: ShoppingCart
-  },
-  {
-    name: 'Messages',
-    href: '/admin/messages',
-    icon: MessageSquare
   }
 ];
 
