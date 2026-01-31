@@ -1,21 +1,36 @@
 
-"use client"
+'use client';
 
+import { useState } from 'react';
 import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ShoppingBag, ShieldCheck, Phone } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { CheckoutForm } from './checkout-form';
+import { OrderConfirmation } from './order-confirmation';
+import { CartItemForOrder } from '@/app/actions/checkout';
 
 export default function CheckoutPage() {
   const { cart, cartTotal, clearCart } = useCart();
   const { isCalling, startCall } = useVoiceCall();
+  const [isOrderPlaced, setIsOrderPlaced] = useState(false);
+  const [orderData, setOrderData] = useState<{ orderId: string; total: number } | null>(null);
 
-  const handleCompleteOrder = () => {
-    alert("Thank you for your order! Our representative will call you shortly.");
+  const handleOrderComplete = (orderId: string, total: number) => {
+    setOrderData({ orderId, total });
+    setIsOrderPlaced(true);
     clearCart();
   };
+
+  // Convert cart items to format expected by checkout action
+  const cartItemsForOrder: CartItemForOrder[] = cart.map(item => ({
+    id: item.id,
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity
+  }));
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 lg:p-24">
@@ -27,12 +42,26 @@ export default function CheckoutPage() {
             </Button>
           </Link>
           <div className="text-right">
-            <h1 className="text-3xl md:text-5xl font-headline italic">Your Selection</h1>
-            <p className="text-primary uppercase tracking-widest text-xs mt-2">Finalize Purchase</p>
+            <h1 className="text-3xl md:text-5xl font-headline italic">
+              {isOrderPlaced ? 'Order Confirmation' : 'Your Selection'}
+            </h1>
+            <p className="text-primary uppercase tracking-widest text-xs mt-2">
+              {isOrderPlaced ? 'Thank You' : 'Finalize Purchase'}
+            </p>
           </div>
         </header>
 
-        <main className="grid grid-cols-1 lg:grid-cols-2 gap-16">
+        {/* Order Confirmation View */}
+        {isOrderPlaced && orderData ? (
+          <main className="max-w-2xl mx-auto">
+            <OrderConfirmation
+              orderId={orderData.orderId}
+              total={orderData.total}
+            />
+          </main>
+        ) : (
+          /* Checkout Form View */
+          <main className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           <section className="space-y-8">
             <h2 className="text-xl font-bold uppercase tracking-widest border-b border-white/10 pb-4">Order Summary</h2>
             <div className="space-y-6">
@@ -52,33 +81,15 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          <section className="bg-white/5 p-8 border border-white/10 space-y-8 h-fit">
-            <div className="space-y-4">
-              <div className="flex justify-between text-sm uppercase tracking-widest text-white/60">
-                <span>Subtotal</span>
-                <span>${cartTotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm uppercase tracking-widest text-white/60">
-                <span>Shipping</span>
-                <span className="text-green-400">Complimentary</span>
-              </div>
-              <div className="h-px bg-white/10" />
-              <div className="flex justify-between text-2xl font-headline font-bold">
-                <span>Total</span>
-                <span className="text-primary">${cartTotal.toLocaleString()}</span>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <Button 
-                onClick={handleCompleteOrder}
-                disabled={cart.length === 0}
-                className="w-full h-16 bg-primary hover:bg-white hover:text-primary text-white rounded-none uppercase tracking-widest font-bold transition-all duration-500"
-              >
-                Complete Purchase
-              </Button>
-              
-              {!isCalling && cart.length > 0 && (
+          <section>
+            <CheckoutForm
+              cartItems={cartItemsForOrder}
+              cartTotal={cartTotal}
+              onOrderComplete={handleOrderComplete}
+            />
+            
+            {!isCalling && cart.length > 0 && (
+              <div className="mt-6">
                 <Button 
                   variant="outline"
                   onClick={() => startCall({ name: cart[0].name, materials: "selected items" })}
@@ -86,14 +97,15 @@ export default function CheckoutPage() {
                 >
                   <Phone className="w-4 h-4 mr-2" /> Request Call Support
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
 
-            <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 uppercase tracking-widest pt-4">
+            <div className="flex items-center justify-center gap-2 text-[10px] text-white/40 uppercase tracking-widest pt-6 mt-6 border-t border-white/10">
               <ShieldCheck className="w-3 h-3" /> Secure Luxury Checkout
             </div>
           </section>
         </main>
+        )}
       </div>
     </div>
   );
