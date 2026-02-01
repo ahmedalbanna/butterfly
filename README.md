@@ -7,6 +7,7 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 - **🎬 Cinematic UI:** A scroll-snap mandatory layout with immersive product displays and elegant typography.
 - **🤖 AI Stylist Chat:** An intelligent fashion consultant available 24/7 to provide personalized advice.
 - **📞 Voice Stylist Call:** A simulated high-end concierge call experience for detailed product inquiries.
+- **🎨 AI Product Creator:** Upload product images and let AI generate luxury descriptions automatically (Admin feature).
 - **✨ Magic Interactions:** Visual feedback with sparkle effects and smooth "typewriter" data reveals.
 - **🛍️ Luxury Bag:** A sophisticated shopping cart experience with seamless checkout transition.
 
@@ -15,6 +16,8 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 - **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [ShadCN UI](https://ui.shadcn.com/)
 - **AI Engine:** [Genkit](https://firebase.google.com/docs/genkit) (Google Gemini 2.5 Flash)
+- **Vision AI:** [Ollama](https://ollama.ai/) with llava model for image analysis
+- **Database:** [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Fonts:** [Alegreya](https://fonts.google.com/specimen/Alegreya) (Serif)
 
@@ -61,6 +64,28 @@ For full e-commerce functionality including order persistence, cart sync, and ch
 - Database: `luxefinds`
 
 See [`DOCKER_DATABASE.md`](./DOCKER_DATABASE.md) for Docker commands and [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for alternative setups.
+
+### AI Product Creator Setup (Optional)
+
+To enable the AI-powered product creation feature for admins:
+
+1. **Start Ollama service:**
+   ```bash
+   ./setup-ollama.sh
+   ```
+   Or manually:
+   ```bash
+   docker compose up -d ollama
+   docker compose exec ollama ollama pull llava
+   ```
+
+2. **Access the feature:**
+   - Navigate to `/admin/products/ai-create`
+   - Upload a product image
+   - AI will generate name, description, category, and price suggestions
+   - Complete remaining fields and save
+
+See [`OLLAMA_SETUP.md`](./OLLAMA_SETUP.md) for detailed setup instructions and [`AI_PRODUCT_CREATOR.md`](./AI_PRODUCT_CREATOR.md) for feature documentation.
 
 ## 📂 Project Structure
 

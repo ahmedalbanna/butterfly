@@ -2,6 +2,10 @@
 
 import { prisma } from '@/lib/db';
 import { Product } from '@prisma/client';
+import { productImageAnalyzerFlow } from '@/ai/flows/product-image-analyzer-flow';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
+import { existsSync } from 'fs';
 
 export type CreateProductData = {
   name: string;
@@ -152,5 +156,182 @@ export async function updateProductStock(id: string, stock: number): Promise<Pro
   } catch (error) {
     console.error('Error updating product stock:', error);
     return null;
+  }
+}
+
+/**
+ * Generate product details from an image using AI
+ */
+export async function generateProductFromImage(formData: FormData): Promise<{
+  success: boolean;
+  data?: {
+    name: string;
+    description: string;
+    category: string;
+    suggestedPrice?: number;
+    imageUrl: string;
+  };
+  error?: string;
+}> {
+  try {
+    const file = formData.get('image') as File;
+    
+    if (!file) {
+      return { success: false, error: 'No image file provided' };
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return { success: false, error: 'File must be an image' };
+    }
+
+    // Create products directory if it doesn't exist
+    const productsDir = path.join(process.cwd(), 'public', 'products');
+    if (!existsSync(productsDir)) {
+      await mkdir(productsDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filename = `${timestamp}-${sanitizedName}`;
+    const filepath = path.join(productsDir, filename);
+
+    // Save the file
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+    await writeFile(filepath, buffer);
+
+    // Generate public URL
+    const imageUrl = `/products/${filename}`;
+    
+    // Call AI flow to analyze the image
+    console.log('Calling AI flow to analyze image...');
+    const aiResult = await productImageAnalyzerFlow({
+      imageUrl: path.join(process.cwd(), 'public', 'products', filename)
+    });
+
+    console.log('AI analysis result:', aiResult);
+
+    return {
+      success: true,
+      data: {
+        name: aiResult.name,
+        description: aiResult.description,
+        category: aiResult.category,
+        suggestedPrice: aiResult.suggestedPrice,
+        imageUrl: imageUrl,
+      }
+    };
+  } catch (error) {
+    console.error('Error generating product from image:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to analyze image'
+    };
+  }
+}
+
+/**
+ * Generate product details from multiple images using AI (batch processing)
+ */
+export async function generateProductsFromMultipleImages(formData: FormData): Promise<{
+  success: boolean;
+  results?: Array<{
+    id: string;
+    fileName: string;
+    success: boolean;
+    data?: {
+      name: string;
+      description: string;
+      category: string;
+      suggestedPrice?: number;
+      imageUrl: string;
+    };
+    error?: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const files = formData.getAll('images') as File[];
+    
+    if (!files || files.length === 0) {
+      return { success: false, error: 'No image files provided' };
+    }
+
+    // Validate all files are images
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        return { success: false, error: `File ${file.name} is not an image` };
+      }
+    }
+
+    // Create products directory if it doesn't exist
+    const productsDir = path.join(process.cwd(), 'public', 'products');
+    if (!existsSync(productsDir)) {
+      await mkdir(productsDir, { recursive: true });
+    }
+
+    const results = [];
+
+    // Process each image sequentially
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const id = `draft-${Date.now()}-${i}`;
+      
+      try {
+        // Generate unique filename
+        const timestamp = Date.now();
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filename = `${timestamp}-${sanitizedName}`;
+        const filepath = path.join(productsDir, filename);
+
+        // Save the file
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        await writeFile(filepath, buffer);
+
+        // Generate public URL
+        const imageUrl = `/products/${filename}`;
+        
+        // Call AI flow to analyze the image
+        console.log(`Analyzing image ${i + 1}/${files.length}: ${file.name}`);
+        const aiResult = await productImageAnalyzerFlow({
+          imageUrl: path.join(process.cwd(), 'public', 'products', filename)
+        });
+
+        results.push({
+          id,
+          fileName: file.name,
+          success: true,
+          data: {
+            name: aiResult.name,
+            description: aiResult.description,
+            category: aiResult.category,
+            suggestedPrice: aiResult.suggestedPrice,
+            imageUrl: imageUrl,
+          }
+        });
+      } catch (error) {
+        console.error(`Error analyzing image ${file.name}:`, error);
+        results.push({
+          id,
+          fileName: file.name,
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to analyze image'
+        });
+      }
+    }
+
+    return {
+      success: true,
+      results
+    };
+  } catch (error) {
+    console.error('Error processing multiple images:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to process images'
+    };
   }
 }

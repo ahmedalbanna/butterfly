@@ -1,7 +1,8 @@
-# LuxeFinds PostgreSQL Database
+# LuxeFinds Services - PostgreSQL Database & Ollama AI
 # Start: docker compose up -d
 # Stop: docker compose down
-# Logs: docker compose logs -f postgres
+# Logs: docker compose logs -f [postgres|ollama]
+# Pull models: docker compose exec ollama ollama pull llava
 
 services:
   postgres:
@@ -23,6 +24,32 @@ services:
       timeout: 5s
       retries: 5
 
+  ollama:
+    image: ollama/ollama:latest
+    container_name: luxefinds-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 volumes:
   postgres_data:
+    driver: local
+  ollama_data:
     driver: local

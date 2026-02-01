@@ -11,7 +11,8 @@ import {
   Sparkles,
   ArrowLeft,
   MessageSquare,
-  Phone
+  Phone,
+  Wand2
 } from 'lucide-react';
 
 const navigation = [
@@ -44,6 +45,11 @@ const navigation = [
     name: 'Products',
     href: '/admin/products',
     icon: Package
+  },
+  {
+    name: 'AI Product Creator',
+    href: '/admin/products/ai-create',
+    icon: Wand2
   },
   {
     name: 'Categories',

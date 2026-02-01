@@ -1,0 +1,27 @@
+# LuxeFinds Ollama Service (CPU-only version)
+# Use this if you don't have GPU support
+# Start: docker compose -f docker-compose.ollama.yml up -d
+# Stop: docker compose -f docker-compose.ollama.yml down
+# Pull models: docker compose -f docker-compose.ollama.yml exec ollama ollama pull llava
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: luxefinds-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  ollama_data:
+    driver: local
