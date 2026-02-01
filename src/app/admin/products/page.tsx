@@ -33,6 +33,7 @@ export default function ProductsPage() {
     care: '',
     image: '',
     images: '',
+    video: '',
     featured: false,
     stock: 100
   });
@@ -109,6 +110,7 @@ export default function ProductsPage() {
       care: product.care,
       image: product.image,
       images: product.images.join(', '),
+      video: product.video || '',
       featured: product.featured,
       stock: product.stock
     });
@@ -155,6 +157,7 @@ export default function ProductsPage() {
       care: '',
       image: '',
       images: '',
+      video: '',
       featured: false,
       stock: 100
     });
@@ -361,6 +364,17 @@ export default function ProductsPage() {
                   className="bg-black/40 border-white/20 text-white"
                   placeholder="https://..., https://..."
                 />
+              </div>
+
+              <div>
+                <label className="text-xs uppercase tracking-wider text-white/60 font-bold mb-2 block">Video URL (Optional)</label>
+                <Input
+                  value={formData.video}
+                  onChange={(e) => setFormData({ ...formData, video: e.target.value })}
+                  className="bg-black/40 border-white/20 text-white"
+                  placeholder="https://... (MP4, WebM format)"
+                />
+                <p className="text-xs text-white/40 mt-1">Add a product video to display instead of images on the homepage</p>
               </div>
 
               <div className="flex items-center gap-2">

@@ -377,7 +377,20 @@ export default function Home() {
                   onClick={(e) => handleImageInteraction(e, product.id)}
                   className="w-full lg:w-1/2 h-[40vh] md:h-[45vh] lg:h-full relative overflow-hidden bg-muted/10 group/media cursor-crosshair box-border"
                 >
-                  {product.image && (
+                  {product.video ? (
+                    <video 
+                      src={product.video} 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className={cn(
+                        "w-full h-full object-cover transition-all duration-1000",
+                        isVisible ? "opacity-100" : "opacity-0",
+                        zoomed ? "scale-125 brightness-110" : "scale-100"
+                      )}
+                    />
+                  ) : product.image && (
                     <Image 
                       src={product.image} 
                       alt={product.name} 

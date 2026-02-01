@@ -16,6 +16,7 @@ export type CreateProductData = {
   care: string;
   image: string;
   images?: string[];
+  video?: string;
   featured?: boolean;
   stock?: number;
 };
@@ -37,6 +38,7 @@ export async function createProduct(data: CreateProductData): Promise<Product | 
         care: data.care,
         image: data.image,
         images: data.images || [data.image],
+        video: data.video || null,
         featured: data.featured ?? false,
         stock: data.stock ?? 100
       }

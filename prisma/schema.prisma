@@ -37,6 +37,7 @@ model Product {
   care        String   @db.Text
   image       String   // Primary image URL
   images      String[] // Array of image URLs
+  video       String?  // Optional video URL (MP4, WebM, etc.)
   featured    Boolean  @default(false)
   stock       Int      @default(100)
   createdAt   DateTime @default(now())
