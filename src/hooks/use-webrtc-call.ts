@@ -9,11 +9,16 @@ interface WebRTCCallOptions {
   onError?: (error: string) => void;
 }
 
-// STUN server configuration
+// STUN and TURN server configuration
 const ICE_SERVERS = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: 'turn:free.expressturn.com:3478',
+      username: '000000002085337863',
+      credential: 'CN6njZn6WEp2fA1KwnjjM5BTLiE=',
+    },
   ],
 };
 

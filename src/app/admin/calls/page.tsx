@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllCallSessions, getCallStats, updateCallStatus, deleteCallSession } from '@/app/actions/admin-calls';
+import { getAllCallSessions, getCallStats, updateCallStatus, deleteCallSession, answerCall } from '@/app/actions/admin-calls';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Clock, Trash2, PhoneCall, PhoneMissed, PhoneOff, Radio } from 'lucide-react';
+import { Phone, Clock, Trash2, PhoneCall, PhoneMissed, PhoneOff, Radio, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCallSession } from '@prisma/client';
+import { AdminVoiceCallOverlay } from '@/components/admin-voice-call-overlay';
 
 export default function CallsPage() {
   const [calls, setCalls] = useState<VoiceCallSession[]>([]);
@@ -22,7 +23,14 @@ export default function CallsPage() {
     averageDuration: 0
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [activeCallSession, setActiveCallSession] = useState<VoiceCallSession | null>(null);
+  const [isCallOverlayOpen, setIsCallOverlayOpen] = useState(false);
+  const [answeringCallId, setAnsweringCallId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Mock admin info (in production, get from auth context)
+  const adminId = 'admin-001';
+  const adminName = 'Admin Assistant';
 
   useEffect(() => {
     loadData();
@@ -52,6 +60,90 @@ export default function CallsPage() {
       });
       loadData();
     }
+  };
+
+  const handleAnswerCall = async (call: VoiceCallSession) => {
+    if (call.status !== 'ringing') {
+      toast({
+        title: 'Error',
+        description: 'Can only answer ringing calls',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setAnsweringCallId(call.id);
+
+    try {
+      const result = await answerCall(call.id, adminId, adminName);
+      
+      if (result) {
+        setActiveCallSession(result);
+        setIsCallOverlayOpen(true);
+        toast({
+          title: 'Call Connected',
+          description: `Connected to ${call.customerName}`
+        });
+        loadData();
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to answer call',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error answering call:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to answer call',
+        variant: 'destructive'
+      });
+    } finally {
+      setAnsweringCallId(null);
+    }
+  };
+
+  const handleDeclineCall = async (call: VoiceCallSession) => {
+    if (call.status !== 'ringing') {
+      toast({
+        title: 'Error',
+        description: 'Can only decline ringing calls',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const result = await updateCallStatus(call.id, 'declined', adminId, adminName);
+      
+      if (result) {
+        toast({
+          title: 'Success',
+          description: `Call from ${call.customerName} declined`
+        });
+        loadData();
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to decline call',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error declining call:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to decline call',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCloseCallOverlay = () => {
+    setIsCallOverlayOpen(false);
+    setActiveCallSession(null);
+    loadData();
   };
 
   const getStatusBadge = (status: string) => {
@@ -172,6 +264,27 @@ export default function CallsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2 justify-end">
+                        {call.status === 'ringing' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAnswerCall(call)}
+                              disabled={answeringCallId === call.id}
+                              className="bg-green-600 hover:bg-green-700 text-white text-xs h-8 px-3 flex items-center gap-1"
+                            >
+                              <Phone className="w-3 h-3" />
+                              {answeringCallId === call.id ? 'Answering...' : 'Answer'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleDeclineCall(call)}
+                              variant="outline"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/10 text-xs h-8 px-3"
+                            >
+                              <PhoneOff className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
@@ -227,6 +340,13 @@ export default function CallsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Admin Voice Call Overlay */}
+      <AdminVoiceCallOverlay
+        callSession={activeCallSession}
+        onClose={handleCloseCallOverlay}
+        isOpen={isCallOverlayOpen}
+      />
     </div>
   );
 }

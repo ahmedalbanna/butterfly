@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createCustomerMessage } from '@/app/actions/messages';
-import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle, Headphones } from 'lucide-react';
+import { TestCallButton } from '@/components/test-call-button';
 
 export default function ContactPage() {
   const searchParams = useSearchParams();
@@ -166,6 +167,24 @@ export default function ContactPage() {
                   <span className="text-neutral-400">Sunday</span>
                   <span className="text-neutral-200">Closed</span>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-primary/20 to-primary/10 border-primary/40">
+              <CardHeader>
+                <CardTitle className="text-xl font-serif text-primary flex items-center gap-2">
+                  <Headphones className="h-5 w-5" />
+                  Live Support
+                </CardTitle>
+                <CardDescription className="text-neutral-300">
+                  Speak with our team instantly
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-neutral-300">
+                  Experience personalized assistance with a direct voice call to our luxury stylists.
+                </p>
+                <TestCallButton />
               </CardContent>
             </Card>
           </div>

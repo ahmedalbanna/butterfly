@@ -81,6 +81,8 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
       durationIntervalRef.current = null;
     }
 
+    console.log('[Voice Call] Call ended. Was connected:', wasConnected, 'Duration:', callDuration);
+
     // Update call session in database
     if (callId) {
       let status = 'ended';
@@ -93,6 +95,8 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
         // If customer cancels before admin answers, mark as missed
         status = 'missed';
       }
+
+      console.log('[Voice Call] Updating session:', { callId, status, duration });
 
       fetch('/api/calls/session', {
         method: 'PATCH',

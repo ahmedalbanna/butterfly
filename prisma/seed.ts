@@ -11,31 +11,325 @@ const prisma = new PrismaClient({ adapter });
 const categoriesData = [
   {
     id: 'cat1',
-    name: 'Jewelry',
-    slug: 'jewelry',
-    description: 'Exquisite jewelry pieces crafted with precision and elegance',
+    name: 'Zircon rings',
+    slug: 'zircon-rings',
+    description: 'Exquisite zircon rings crafted with meticulous precision and timeless elegance',
     displayOrder: 1
   },
   {
     id: 'cat2',
-    name: 'Watches',
-    slug: 'watches',
-    description: 'Timeless timepieces that blend artistry with function',
+    name: 'Plated rings',
+    slug: 'plated-rings',
+    description: 'Luxurious plated rings that capture the essence of refined sophistication',
     displayOrder: 2
   },
   {
     id: 'cat3',
-    name: 'Bags',
-    slug: 'bags',
-    description: 'Luxurious handbags and accessories for the discerning collector',
+    name: 'Steel rings',
+    slug: 'steel-rings',
+    description: 'Durable and elegant steel rings for the modern connoisseur',
     displayOrder: 3
   },
   {
     id: 'cat4',
-    name: 'Accessories',
-    slug: 'accessories',
-    description: 'Refined accessories to complete your sophisticated look',
+    name: 'LOL rings',
+    slug: 'lol-rings',
+    description: 'Contemporary rings designed with distinctive flair and character',
     displayOrder: 4
+  },
+  {
+    id: 'cat5',
+    name: 'Streamlined plated bracelets',
+    slug: 'streamlined-plated-bracelets',
+    description: 'Refined plated bracelets with sleek, contemporary design',
+    displayOrder: 5
+  },
+  {
+    id: 'cat6',
+    name: 'Zircon flow bracelets',
+    slug: 'zircon-flow-bracelets',
+    description: 'Exquisite zircon bracelets featuring fluid, mesmerizing designs',
+    displayOrder: 6
+  },
+  {
+    id: 'cat7',
+    name: 'Streamlined steel bracelets',
+    slug: 'streamlined-steel-bracelets',
+    description: 'Modern steel bracelets with a clean, sophisticated aesthetic',
+    displayOrder: 7
+  },
+  {
+    id: 'cat8',
+    name: 'Plated bracelets',
+    slug: 'plated-bracelets',
+    description: 'Luxurious plated bracelets for the discerning collector',
+    displayOrder: 8
+  },
+  {
+    id: 'cat9',
+    name: 'Zirconia cuff bracelets',
+    slug: 'zirconia-cuff-bracelets',
+    description: 'Statement-making zirconia cuff bracelets with bold elegance',
+    displayOrder: 9
+  },
+  {
+    id: 'cat10',
+    name: 'Steel bracelets',
+    slug: 'steel-bracelets',
+    description: 'Timeless steel bracelets combining durability with refined design',
+    displayOrder: 10
+  },
+  {
+    id: 'cat11',
+    name: 'Painted smooth',
+    slug: 'painted-smooth',
+    description: 'Artistically painted pieces with impeccable smooth finishes',
+    displayOrder: 11
+  },
+  {
+    id: 'cat12',
+    name: 'Sloss zircon',
+    slug: 'sloss-zircon',
+    description: 'Expertly crafted sloss zircon pieces of exceptional quality',
+    displayOrder: 12
+  },
+  {
+    id: 'cat13',
+    name: 'Sloss Estelle',
+    slug: 'sloss-estelle',
+    description: 'Distinctive sloss Estelle collection with timeless appeal',
+    displayOrder: 13
+  },
+  {
+    id: 'cat14',
+    name: 'Painted silencers',
+    slug: 'painted-silencers',
+    description: 'Elegantly painted silencer pieces for sophisticated styling',
+    displayOrder: 14
+  },
+  {
+    id: 'cat15',
+    name: 'Zircon stones',
+    slug: 'zircon-stones',
+    description: 'Premium zircon stones with brilliant sparkle and clarity',
+    displayOrder: 15
+  },
+  {
+    id: 'cat16',
+    name: 'Akhras Steel',
+    slug: 'akhras-steel',
+    description: 'Meticulously crafted Akhras steel pieces with refined beauty',
+    displayOrder: 16
+  },
+  {
+    id: 'cat17',
+    name: 'Plated anklet',
+    slug: 'plated-anklet',
+    description: 'Luxurious plated anklets for an air of understated elegance',
+    displayOrder: 17
+  },
+  {
+    id: 'cat18',
+    name: 'Zirconia anklets',
+    slug: 'zirconia-anklets',
+    description: 'Stunning zirconia anklets that sparkle with timeless radiance',
+    displayOrder: 18
+  },
+  {
+    id: 'cat19',
+    name: 'Steel anklets',
+    slug: 'steel-anklets',
+    description: 'Durable steel anklets combining comfort with refined design',
+    displayOrder: 19
+  },
+  {
+    id: 'cat20',
+    name: 'Reins',
+    slug: 'reins',
+    description: 'Distinctive rein pieces for the contemporary jewelry enthusiast',
+    displayOrder: 20
+  },
+  {
+    id: 'cat21',
+    name: 'Plated belt',
+    slug: 'plated-belt',
+    description: 'Luxurious plated belts that elevate any ensemble',
+    displayOrder: 21
+  },
+  {
+    id: 'cat22',
+    name: 'Zircon belts',
+    slug: 'zircon-belts',
+    description: 'Exquisite zircon belts with brilliant sparkle and sophistication',
+    displayOrder: 22
+  },
+  {
+    id: 'cat23',
+    name: 'Pack it lol',
+    slug: 'pack-it-lol',
+    description: 'Contemporary collection pieces with playful elegance',
+    displayOrder: 23
+  },
+  {
+    id: 'cat24',
+    name: 'Insaf Taqum lol',
+    slug: 'insaf-taqum-lol',
+    description: 'Distinctive Insaf Taqum collection with unique character',
+    displayOrder: 24
+  },
+  {
+    id: 'cat25',
+    name: 'LOL fights',
+    slug: 'lol-fights',
+    description: 'Bold and striking LOL fights collection pieces',
+    displayOrder: 25
+  },
+  {
+    id: 'cat26',
+    name: 'Indian lol kits',
+    slug: 'indian-lol-kits',
+    description: 'Inspired Indian LOL kits with cultural artistry',
+    displayOrder: 26
+  },
+  {
+    id: 'cat27',
+    name: 'Local lol taqoomat',
+    slug: 'local-lol-taqoomat',
+    description: 'Local LOL taqoomat pieces with authentic charm',
+    displayOrder: 27
+  },
+  {
+    id: 'cat28',
+    name: 'Half plated taqoum',
+    slug: 'half-plated-taqoum',
+    description: 'Elegantly designed half plated taqoum with refined aesthetics',
+    displayOrder: 28
+  },
+  {
+    id: 'cat29',
+    name: 'Painted set',
+    slug: 'painted-set',
+    description: 'Artistically painted coordinating sets with cohesive elegance',
+    displayOrder: 29
+  },
+  {
+    id: 'cat30',
+    name: 'Farfasha painted set',
+    slug: 'farfasha-painted-set',
+    description: 'Exquisite Farfasha painted sets with meticulous artistry',
+    displayOrder: 30
+  },
+  {
+    id: 'cat31',
+    name: 'Painted mukhawar taqumat',
+    slug: 'painted-mukhawar-taqumat',
+    description: 'Beautifully painted mukhawar taqumat with traditional elegance',
+    displayOrder: 31
+  },
+  {
+    id: 'cat32',
+    name: 'Hamat Ras',
+    slug: 'hamat-ras',
+    description: 'Distinctive Hamat Ras pieces with timeless appeal',
+    displayOrder: 32
+  },
+  {
+    id: 'cat33',
+    name: 'Lathem Zircon',
+    slug: 'lathem-zircon',
+    description: 'Premium Lathem zircon collection with brilliant radiance',
+    displayOrder: 33
+  },
+  {
+    id: 'cat34',
+    name: 'Lathm is painted',
+    slug: 'lathm-is-painted',
+    description: 'Artistically painted Lathm pieces with refined beauty',
+    displayOrder: 34
+  },
+  {
+    id: 'cat35',
+    name: 'Then Estelle',
+    slug: 'then-estelle',
+    description: 'Timeless Then Estelle collection with enduring elegance',
+    displayOrder: 35
+  },
+  {
+    id: 'cat36',
+    name: 'Thin zircon sets',
+    slug: 'thin-zircon-sets',
+    description: 'Delicate thin zircon sets with sparkling sophistication',
+    displayOrder: 36
+  },
+  {
+    id: 'cat37',
+    name: 'Zircon half rings',
+    slug: 'zircon-half-rings',
+    description: 'Uniquely designed zircon half rings with contemporary flair',
+    displayOrder: 37
+  },
+  {
+    id: 'cat38',
+    name: 'Bridal zircon ring',
+    slug: 'bridal-zircon-ring',
+    description: 'Exquisite bridal zircon rings for your most special moments',
+    displayOrder: 38
+  },
+  {
+    id: 'cat39',
+    name: 'Taqum Estelle',
+    slug: 'taqum-estelle',
+    description: 'Elegant Taqum Estelle pieces with timeless sophistication',
+    displayOrder: 39
+  },
+  {
+    id: 'cat40',
+    name: 'Insaf Taqum Estelle',
+    slug: 'insaf-taqum-estelle',
+    description: 'Premium Insaf Taqum Estelle collection with exceptional craftsmanship',
+    displayOrder: 40
+  },
+  {
+    id: 'cat41',
+    name: 'Customized silver name designs',
+    slug: 'customized-silver-name-designs',
+    description: 'Personalized silver name designs crafted to your specifications',
+    displayOrder: 41
+  },
+  {
+    id: 'cat42',
+    name: 'Customized silver plated name designs',
+    slug: 'customized-silver-plated-name-designs',
+    description: 'Bespoke silver plated name designs with personal flair',
+    displayOrder: 42
+  },
+  {
+    id: 'cat43',
+    name: 'Customized gold name designs',
+    slug: 'customized-gold-name-designs',
+    description: 'Luxurious customized gold name designs with timeless beauty',
+    displayOrder: 43
+  },
+  {
+    id: 'cat44',
+    name: 'Customized silver set designs',
+    slug: 'customized-silver-set-designs',
+    description: 'Personalized silver set designs tailored to your taste',
+    displayOrder: 44
+  },
+  {
+    id: 'cat45',
+    name: 'Customized silver plated set designs',
+    slug: 'customized-silver-plated-set-designs',
+    description: 'Bespoke silver plated set designs with coordinated elegance',
+    displayOrder: 45
+  },
+  {
+    id: 'cat46',
+    name: 'Customized gold set designs',
+    slug: 'customized-gold-set-designs',
+    description: 'Exquisite customized gold set designs for the discerning collector',
+    displayOrder: 46
   }
 ];
 

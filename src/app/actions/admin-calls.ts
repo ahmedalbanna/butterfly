@@ -180,3 +180,29 @@ export async function getCallsByCustomer(customerId: string): Promise<VoiceCallS
     return [];
   }
 }
+
+/**
+ * Answer an incoming call
+ */
+export async function answerCall(
+  callId: string,
+  adminId: string,
+  adminName: string
+): Promise<VoiceCallSession | null> {
+  try {
+    const call = await prisma.voiceCallSession.update({
+      where: { id: callId },
+      data: {
+        status: 'active',
+        adminId,
+        adminName
+      }
+    });
+
+    console.log(`[Admin Call] Call ${callId.slice(0, 8)} answered by ${adminName}`);
+    return call;
+  } catch (error) {
+    console.error('Error answering call:', error);
+    return null;
+  }
+}
