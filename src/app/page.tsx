@@ -1,4 +1,3 @@
-
 "use client"
 
 import Image from 'next/image';
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
+import { ButterflyLogo } from '@/components/butterfly-logo';
 
 interface SparkleEffect {
   id: number;
@@ -223,10 +223,13 @@ export default function Home() {
       {/* Brand Logo */}
       <div className="fixed top-4 left-4 md:top-8 md:left-12 z-50">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-primary flex items-center justify-center rounded-sm rotate-45 shadow-[0_0_15px_rgba(var(--primary),0.5)]">
-            <Sparkles className="text-white w-4 h-4 md:w-5 md:h-5 -rotate-45" />
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-white flex items-center justify-center rounded-full shadow-[0_0_20px_rgba(var(--primary),0.3)] border border-primary/20">
+            <ButterflyLogo className="w-6 h-6 md:w-8 md:h-8" />
           </div>
-          <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter drop-shadow-lg text-primary">LuxeFinds</h2>
+          <div>
+            <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter drop-shadow-lg text-primary">LuxeFinds</h2>
+            <p className="text-[7px] uppercase tracking-[0.3em] text-white/40 font-bold -mt-1">Butterfly Collection</p>
+          </div>
         </div>
       </div>
 

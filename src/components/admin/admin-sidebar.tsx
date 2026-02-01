@@ -8,12 +8,12 @@ import {
   Package, 
   FolderTree, 
   ShoppingCart, 
-  Sparkles,
   ArrowLeft,
   MessageSquare,
   Phone,
   Wand2
 } from 'lucide-react';
+import { ButterflyLogo } from '@/components/butterfly-logo';
 
 const navigation = [
   {
@@ -66,8 +66,8 @@ export function AdminSidebar() {
       {/* Brand Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-sm rotate-45 shadow-[0_0_15px_rgba(var(--primary),0.5)]">
-            <Sparkles className="text-white w-5 h-5 -rotate-45" />
+          <div className="w-10 h-10 bg-white flex items-center justify-center rounded-full shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20">
+            <ButterflyLogo className="w-6 h-6" />
           </div>
           <div>
             <h2 className="text-2xl font-headline font-bold text-primary tracking-tighter">LuxeFinds</h2>
@@ -119,7 +119,7 @@ export function AdminSidebar() {
             No Authentication Required
           </p>
           <p className="text-[10px] text-white/20 mt-1 italic">
-            Luxury Management Suite
+            Butterfly Management Suite
           </p>
         </div>
       </div>
