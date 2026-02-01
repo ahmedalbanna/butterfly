@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { Product } from '@prisma/client';
+import { Product, SocialMediaPost } from '@prisma/client';
 import { productImageAnalyzerFlow } from '@/ai/flows/product-image-analyzer-flow';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
@@ -332,6 +332,174 @@ export async function generateProductsFromMultipleImages(formData: FormData): Pr
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to process images'
+    };
+  }
+}
+
+/**
+ * Publish product to social media platforms via n8n
+ */
+export async function publishProductToSocial(
+  productId: string,
+  platforms: string[]
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    if (!platforms || platforms.length === 0) {
+      return { success: false, error: 'No platforms selected' };
+    }
+
+    // Validate platforms
+    const validPlatforms = ['facebook', 'instagram', 'twitter', 'pinterest', 'tiktok'];
+    const invalidPlatforms = platforms.filter(p => !validPlatforms.includes(p.toLowerCase()));
+    
+    if (invalidPlatforms.length > 0) {
+      return {
+        success: false,
+        error: `Invalid platforms: ${invalidPlatforms.join(', ')}`
+      };
+    }
+
+    // Call the webhook endpoint
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/webhooks/n8n/publish`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        productId,
+        platforms: platforms.map(p => p.toLowerCase()),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        success: false,
+        error: errorData.error || 'Failed to publish to social media'
+      };
+    }
+
+    const result = await response.json();
+    return {
+      success: true,
+      data: result
+    };
+  } catch (error) {
+    console.error('Error publishing to social media:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to publish to social media'
+    };
+  }
+}
+
+/**
+ * Get social media posts for a product or all products
+ */
+export async function getSocialMediaPosts(
+  productId?: string
+): Promise<Array<SocialMediaPost & { product: { name: string; image: string } }>> {
+  try {
+    const posts = await prisma.socialMediaPost.findMany({
+      where: productId ? { productId } : undefined,
+      include: {
+        product: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    return posts;
+  } catch (error) {
+    console.error('Error fetching social media posts:', error);
+    return [];
+  }
+}
+
+/**
+ * Get social media post statistics
+ */
+export async function getSocialMediaStats(): Promise<{
+  totalPosts: number;
+  publishedPosts: number;
+  pendingPosts: number;
+  failedPosts: number;
+  byPlatform: Record<string, number>;
+}> {
+  try {
+    const [totalPosts, publishedPosts, pendingPosts, failedPosts, allPosts] = await Promise.all([
+      prisma.socialMediaPost.count(),
+      prisma.socialMediaPost.count({ where: { status: 'published' } }),
+      prisma.socialMediaPost.count({ where: { status: 'pending' } }),
+      prisma.socialMediaPost.count({ where: { status: 'failed' } }),
+      prisma.socialMediaPost.findMany({ select: { platform: true } }),
+    ]);
+
+    const byPlatform: Record<string, number> = {};
+    allPosts.forEach(post => {
+      byPlatform[post.platform] = (byPlatform[post.platform] || 0) + 1;
+    });
+
+    return {
+      totalPosts,
+      publishedPosts,
+      pendingPosts,
+      failedPosts,
+      byPlatform,
+    };
+  } catch (error) {
+    console.error('Error fetching social media stats:', error);
+    return {
+      totalPosts: 0,
+      publishedPosts: 0,
+      pendingPosts: 0,
+      failedPosts: 0,
+      byPlatform: {},
+    };
+  }
+}
+
+/**
+ * Retry a failed social media post
+ */
+export async function retrySocialMediaPost(postId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const post = await prisma.socialMediaPost.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      return { success: false, error: 'Post not found' };
+    }
+
+    if (post.status !== 'failed') {
+      return { success: false, error: 'Only failed posts can be retried' };
+    }
+
+    // Reset post to pending and trigger republish
+    await prisma.socialMediaPost.update({
+      where: { id: postId },
+      data: {
+        status: 'pending',
+        errorMessage: null,
+        postUrl: null,
+      },
+    });
+
+    // Republish to the single platform
+    const result = await publishProductToSocial(post.productId, [post.platform]);
+    return result;
+  } catch (error) {
+    console.error('Error retrying social media post:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to retry post'
     };
   }
 }

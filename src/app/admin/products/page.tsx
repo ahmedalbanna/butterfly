@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllProductsForAdmin, createProduct, updateProduct, deleteProduct, toggleProductFeatured } from '@/app/actions/admin-products';
+import { getAllProductsForAdmin, createProduct, updateProduct, deleteProduct, toggleProductFeatured, publishProductToSocial, getSocialMediaPosts } from '@/app/actions/admin-products';
 import { getCategories } from '@/app/actions/categories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Star, Package } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Edit, Trash2, Star, Package, Share2, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Product, Category } from '@prisma/client';
+import { Product, Category, SocialMediaPost } from '@prisma/client';
 import Image from 'next/image';
 
 type ProductWithCategory = Product & { category: { name: string } };
@@ -35,6 +36,13 @@ export default function ProductsPage() {
     featured: false,
     stock: 100
   });
+
+  // Social media publishing state
+  const [isSocialDialogOpen, setIsSocialDialogOpen] = useState(false);
+  const [publishingProduct, setPublishingProduct] = useState<ProductWithCategory | null>(null);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [socialPosts, setSocialPosts] = useState<Record<string, SocialMediaPost[]>>({});
 
   useEffect(() => {
     loadData();
@@ -151,6 +159,82 @@ export default function ProductsPage() {
       stock: 100
     });
     setEditingProduct(null);
+  };
+
+  // Social media handlers
+  const handleOpenSocialDialog = async (product: ProductWithCategory) => {
+    setPublishingProduct(product);
+    setSelectedPlatforms([]);
+    setIsSocialDialogOpen(true);
+    
+    // Load existing posts for this product
+    const posts = await getSocialMediaPosts(product.id);
+    setSocialPosts({ [product.id]: posts });
+  };
+
+  const handleTogglePlatform = (platform: string) => {
+    setSelectedPlatforms(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    );
+  };
+
+  const handlePublishToSocial = async () => {
+    if (!publishingProduct || selectedPlatforms.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select at least one platform',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setIsPublishing(true);
+    const result = await publishProductToSocial(publishingProduct.id, selectedPlatforms);
+    setIsPublishing(false);
+
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: `Publishing to ${selectedPlatforms.length} platform(s)`,
+      });
+      setIsSocialDialogOpen(false);
+      
+      // Refresh posts
+      const posts = await getSocialMediaPosts(publishingProduct.id);
+      setSocialPosts({ [publishingProduct.id]: posts });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to publish',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const getPlatformIcon = (platform: string) => {
+    const icons: Record<string, string> = {
+      facebook: '📘',
+      instagram: '📷',
+      twitter: '🐦',
+      pinterest: '📌',
+      tiktok: '🎵'
+    };
+    return icons[platform.toLowerCase()] || '📱';
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'published':
+        return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'pending':
+        return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'failed':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -369,6 +453,15 @@ export default function ProductsPage() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          onClick={() => handleOpenSocialDialog(product)}
+                          className="h-8 w-8 text-white/60 hover:text-blue-400 hover:bg-blue-400/10"
+                          title="Share to Social Media"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleEdit(product)}
                           className="h-8 w-8 text-white/60 hover:text-primary hover:bg-primary/10"
                         >
@@ -391,6 +484,97 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Social Media Publishing Dialog */}
+      <Dialog open={isSocialDialogOpen} onOpenChange={setIsSocialDialogOpen}>
+        <DialogContent className="bg-[#0a0a0a] border-white/20 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-headline italic text-primary">
+              Share to Social Media
+            </DialogTitle>
+          </DialogHeader>
+          
+          {publishingProduct && (
+            <div className="space-y-6">
+              {/* Product Preview */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="w-16 h-16 bg-white/5 rounded overflow-hidden relative shrink-0">
+                  {publishingProduct.image && (
+                    <Image src={publishingProduct.image} alt={publishingProduct.name} fill className="object-cover" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-headline text-white">{publishingProduct.name}</p>
+                  <p className="text-sm text-white/60">${publishingProduct.price.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Platform Selection */}
+              <div className="space-y-3">
+                <label className="text-xs uppercase tracking-wider text-white/60 font-bold">Select Platforms</label>
+                {['facebook', 'instagram', 'twitter', 'pinterest', 'tiktok'].map((platform) => (
+                  <div key={platform} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg border border-white/10 hover:border-primary/30 transition-colors">
+                    <Checkbox
+                      id={platform}
+                      checked={selectedPlatforms.includes(platform)}
+                      onCheckedChange={() => handleTogglePlatform(platform)}
+                      className="border-white/20"
+                    />
+                    <label htmlFor={platform} className="flex items-center gap-2 text-sm text-white cursor-pointer flex-1">
+                      <span className="text-lg">{getPlatformIcon(platform)}</span>
+                      <span className="capitalize">{platform}</span>
+                    </label>
+                    {socialPosts[publishingProduct.id]?.find(p => p.platform === platform) && (
+                      <div className="flex items-center gap-1">
+                        {getStatusIcon(socialPosts[publishingProduct.id].find(p => p.platform === platform)!.status)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Existing Posts */}
+              {socialPosts[publishingProduct.id]?.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-xs uppercase tracking-wider text-white/60 font-bold">Recent Posts</label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {socialPosts[publishingProduct.id].map((post) => (
+                      <div key={post.id} className="flex items-center justify-between p-2 bg-white/5 rounded text-xs">
+                        <div className="flex items-center gap-2">
+                          <span>{getPlatformIcon(post.platform)}</span>
+                          <span className="capitalize text-white/60">{post.platform}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(post.status)}
+                          <span className="text-white/40">{post.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={handlePublishToSocial}
+                  disabled={isPublishing || selectedPlatforms.length === 0}
+                  className="flex-1 bg-primary hover:bg-primary/80 text-white disabled:opacity-50"
+                >
+                  {isPublishing ? 'Publishing...' : `Publish to ${selectedPlatforms.length} Platform(s)`}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsSocialDialogOpen(false)}
+                  className="border-white/20 text-white hover:bg-white/10"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

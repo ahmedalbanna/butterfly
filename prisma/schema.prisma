@@ -45,6 +45,7 @@ model Product {
   // Relations
   orderItems OrderItem[]
   cartItems  CartItem[]
+  socialMediaPosts SocialMediaPost[]
 
   @@index([categoryId])
   @@index([featured])
@@ -215,4 +216,24 @@ model VoiceCallSession {
   @@index([status])
   @@index([startedAt])
   @@index([customerId])
+}
+
+// Social Media Posts (n8n Integration)
+model SocialMediaPost {
+  id          String    @id @default(cuid())
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platform    String    // facebook, instagram, twitter, pinterest, tiktok
+  status      String    @default("pending") // pending, published, failed
+  postUrl     String?   // URL to the published post
+  errorMessage String?  @db.Text // Error details if failed
+  metadata    Json?     // Platform-specific metadata (post ID, engagement stats, etc.)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([platform])
+  @@index([status])
+  @@index([createdAt])
 }
