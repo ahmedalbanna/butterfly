@@ -8,7 +8,7 @@ import {VoiceCallOverlay} from '@/components/voice-call-overlay';
 import {ChatOverlay} from '@/components/chat-overlay';
 
 export const metadata: Metadata = {
-  title: 'LuxeFinds | Elegant Accessories',
+  title: 'Butterfly Store | Elegant Accessories',
   description: 'High-end accessories for the modern aesthetic.',
 };
 

@@ -32,7 +32,6 @@ export default function LiveChatPage() {
 
   useEffect(() => {
     loadData();
-    // Auto-refresh every 3 seconds
     const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -43,12 +42,11 @@ export default function LiveChatPage() {
       getMessageStats()
     ]);
     
-    // Add replies to sessions
     const sessionsWithReplies = sessionsData.map(session => ({
       ...session,
       message: {
         ...session.message,
-        replies: [] // Will be fetched when opening detail
+        replies: []
       }
     }));
     
@@ -99,7 +97,6 @@ export default function LiveChatPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Header */}
       <div className="border-b border-white/10 pb-6">
         <div className="flex items-center justify-between">
           <div>
@@ -115,7 +112,6 @@ export default function LiveChatPage() {
         </div>
       </div>
 
-      {/* Active Sessions Grid */}
       {isLoading ? (
         <div className="text-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -135,7 +131,6 @@ export default function LiveChatPage() {
               onClick={() => handleViewSession(session)}
             >
               <CardContent className="p-6 space-y-4">
-                {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/20 border-2 border-primary/40 flex items-center justify-center">
@@ -151,24 +146,17 @@ export default function LiveChatPage() {
                   </Badge>
                 </div>
 
-                {/* Last Message Preview */}
                 <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                   <p className="text-sm text-white/80 line-clamp-2">{session.message.message}</p>
                 </div>
 
-                {/* Footer Info */}
                 <div className="flex items-center justify-between text-xs text-white/40">
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     <span>{new Date(session.lastActivity).toLocaleTimeString()}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MessageSquare className="w-3 h-3" />
-                    <span>{session.messageCount} messages</span>
-                  </div>
                 </div>
 
-                {/* Action Button */}
                 <Button 
                   className="w-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 group-hover:bg-primary group-hover:text-white transition-all"
                   onClick={(e) => {
@@ -185,7 +173,6 @@ export default function LiveChatPage() {
         </div>
       )}
 
-      {/* Chat Session Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="bg-[#0a0a0a] border-white/20 text-white max-w-4xl h-[90vh] flex flex-col">
           <DialogHeader>
@@ -197,7 +184,7 @@ export default function LiveChatPage() {
               {selectedSession?.adminConnected && (
                 <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border ml-auto">
                   <Radio className="w-3 h-3 mr-1 animate-pulse" />
-                  You're Connected
+                  Connected
                 </Badge>
               )}
             </DialogTitle>
@@ -205,19 +192,12 @@ export default function LiveChatPage() {
           
           {selectedSession && (
             <div className="flex-1 flex flex-col min-h-0 space-y-4">
-              {/* Customer Info Bar */}
               <div className="bg-black/40 p-4 rounded border border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-6 text-sm">
                   <div>
                     <span className="text-white/60">Email:</span>
                     <span className="text-white ml-2">{selectedSession.message.customerEmail}</span>
                   </div>
-                  {selectedSession.message.customerPhone && (
-                    <div>
-                      <span className="text-white/60">Phone:</span>
-                      <span className="text-white ml-2">{selectedSession.message.customerPhone}</span>
-                    </div>
-                  )}
                   <div>
                     <span className="text-white/60">Started:</span>
                     <span className="text-white ml-2">{new Date(selectedSession.createdAt).toLocaleTimeString()}</span>
@@ -225,10 +205,8 @@ export default function LiveChatPage() {
                 </div>
               </div>
 
-              {/* Messages Area */}
               <ScrollArea className="flex-1 px-4 bg-black/20 rounded border border-white/10">
                 <div className="space-y-4 py-4">
-                  {/* Initial Message */}
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/20 flex items-center justify-center shrink-0">
                       <User className="w-4 h-4 text-white/70" />
@@ -242,22 +220,16 @@ export default function LiveChatPage() {
                       </span>
                     </div>
                   </div>
-
-                  {/* Replies would go here - for now showing placeholder */}
-                  <div className="text-center py-8">
-                    <p className="text-white/40 text-sm italic">Messages will appear here as the conversation progresses</p>
-                  </div>
                 </div>
               </ScrollArea>
 
-              {/* Reply Input */}
               <div className="bg-gradient-to-r from-black/80 via-black/60 to-black/80 p-4 rounded border border-white/10">
                 <div className="flex gap-3">
                   <Input
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendReply()}
-                    placeholder="Type your reply to the customer..."
+                    placeholder="Type your reply..."
                     disabled={isSending}
                     className="flex-1 bg-white/5 border-2 border-white/10 rounded-xl text-white placeholder:text-white/30 focus:border-primary/50"
                   />
@@ -270,31 +242,11 @@ export default function LiveChatPage() {
                     Send
                   </Button>
                 </div>
-                <p className="text-center mt-2 text-white/20 uppercase tracking-[0.3em] text-[9px] font-bold">
-                  Live Admin Response
-                </p>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Active Session Alert */}
-      {stats.activeChats > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Card className="bg-gradient-to-br from-green-500/20 to-green-600/10 border-green-500/40 shadow-[0_0_40px_rgba(34,197,94,0.3)] animate-pulse">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-500/30 rounded-full flex items-center justify-center border-2 border-green-500/50">
-                <Sparkles className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <p className="text-white font-headline font-bold">{stats.activeChats} Active Chat{stats.activeChats > 1 ? 's' : ''}</p>
-                <p className="text-green-400 text-xs uppercase tracking-wider">Customers waiting</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

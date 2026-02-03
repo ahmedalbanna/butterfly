@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Mail, Package, ArrowRight, MessageCircle } from 'lucide-react';
+import { CheckCircle2, Mail, Package, ArrowLeft, ArrowRight, MessageCircle } from 'lucide-react';
 
 type OrderConfirmationProps = {
   orderId: string;
@@ -15,6 +16,21 @@ export function OrderConfirmation({
   total,
   customerEmail
 }: OrderConfirmationProps) {
+  // Save order ID to localStorage so user can see it in home page later
+  useEffect(() => {
+    if (typeof window !== 'undefined' && orderId) {
+      try {
+        const key = 'butterfly_orders';
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!existing.includes(orderId)) {
+          localStorage.setItem(key, JSON.stringify([...existing, orderId]));
+        }
+      } catch (e) {
+        console.error('Failed to save order ID to localStorage', e);
+      }
+    }
+  }, [orderId]);
+
   return (
     <div className="space-y-12 text-center">
       {/* Success Icon */}
@@ -29,23 +45,23 @@ export function OrderConfirmation({
       <div className="space-y-4">
         <h2 className="text-4xl md:text-5xl font-headline">Order Confirmed</h2>
         <p className="text-white/60 text-lg">
-          Thank you for your exquisite selection. Your order has been received.
+          Thank you for your refined selection. Your order has been received.
         </p>
       </div>
 
       {/* Order Details */}
       <div className="bg-white/5 border border-white/10 rounded-lg p-8 space-y-6 max-w-md mx-auto">
         <div>
-          <p className="text-white/40 uppercase tracking-widest text-xs mb-2">Order Number</p>
+          <p className="text-white/40 uppercase tracking-widest text-xs mb-2">Order ID</p>
           <p className="font-mono text-2xl font-bold text-primary break-all">{orderId}</p>
         </div>
 
         <div className="h-px bg-white/10" />
 
         <div>
-          <p className="text-white/40 uppercase tracking-widest text-xs mb-2">Order Total</p>
+          <p className="text-white/40 uppercase tracking-widest text-xs mb-2">Total Amount</p>
           <p className="text-3xl font-bold">
-            ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            ${total.toLocaleString()}
           </p>
         </div>
 
@@ -58,15 +74,15 @@ export function OrderConfirmation({
           </div>
           <div className="flex items-center justify-center gap-3 text-white/80">
             <Package className="w-4 h-4" />
-            <span>We'll prepare your items for shipment</span>
+            <span>We are now preparing your order</span>
           </div>
         </div>
       </div>
 
       {/* Additional Info */}
-      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-6 max-w-md mx-auto">
-        <p className="text-sm text-blue-300">
-          💎 <strong>Premium Care:</strong> Our team will prepare your luxurious items with meticulous attention to detail. You can expect a shipping confirmation within 24 hours.
+      <div className="bg-primary/10 border border-primary/30 rounded-lg p-6 max-w-md mx-auto">
+        <p className="text-sm text-primary">
+          💎 <strong>Exquisite Care:</strong> Our team will meticulously prepare your luxury pieces. Expect a shipping notification within 24 hours.
         </p>
       </div>
 
@@ -88,21 +104,21 @@ export function OrderConfirmation({
             className="w-full h-12 border-white/20 text-white/80 hover:border-primary hover:text-primary rounded-none uppercase tracking-widest font-bold text-sm transition-all duration-300"
           >
             <MessageCircle className="w-4 h-4 mr-2" />
-            Need Help with This Order?
+            Need help with this order?
           </Button>
         </Link>
 
         <Link href="/" className="w-full">
           <Button className="w-full h-12 bg-primary hover:bg-white hover:text-primary text-white rounded-none uppercase tracking-widest font-bold text-sm transition-all duration-300">
-            Continue Shopping
+            Return to Boutique
           </Button>
         </Link>
       </div>
 
       {/* Support Info */}
       <p className="text-white/40 text-xs">
-        Have questions? Your order number is <span className="text-primary font-mono">{orderId.substring(0, 8)}</span> for reference. 
-        Our team is here to assist you.
+        Questions? Reference Order <span className="text-primary font-mono">{orderId.substring(0, 8)}</span>.
+        Our team is always here to assist you.
       </p>
     </div>
   );

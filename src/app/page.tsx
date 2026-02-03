@@ -1,11 +1,11 @@
 "use client"
 
 import Image from 'next/image';
-import { CATEGORIES } from '@/lib/products';
 import { getHomePageData, GroupedProducts } from '@/app/actions/page-data';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone } from 'lucide-react';
+import { getOrdersByIds, OrderWithItems } from '@/app/actions/orders';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
@@ -19,6 +19,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { ButterflyLogo } from '@/components/butterfly-logo';
 
@@ -66,12 +67,18 @@ export default function Home() {
   const { startCall } = useVoiceCall();
   const { openChat } = useChat();
   const { toast } = useToast();
+  
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
   const [isZoomed, setIsZoomed] = useState<Record<string, boolean>>({});
   const [groupedProducts, setGroupedProducts] = useState<GroupedProducts[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Track orders
+  const [customerOrders, setCustomerOrders] = useState<OrderWithItems[]>([]);
+  const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Fetch products from database on mount
@@ -94,7 +101,26 @@ export default function Home() {
     loadProducts();
   }, [toast]);
 
+  // Fetch previous requests from local storage
+  const loadCustomerOrders = async () => {
+    if (typeof window === 'undefined') return;
+    
+    setIsOrdersLoading(true);
+    try {
+      const savedIds = JSON.parse(localStorage.getItem('butterfly_orders') || '[]');
+      if (savedIds.length > 0) {
+        const orders = await getOrdersByIds(savedIds);
+        setCustomerOrders(orders);
+      }
+    } catch (e) {
+      console.error('Error loading local orders:', e);
+    } finally {
+      setIsOrdersLoading(false);
+    }
+  };
+
   useEffect(() => {
+    if (groupedProducts.length === 0) return;
     const initialIndices: Record<number, number> = {};
     groupedProducts.forEach((_, idx) => {
       initialIndices[idx] = 0;
@@ -178,6 +204,27 @@ export default function Home() {
     }, 1000);
   };
 
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      'pending': 'Processing',
+      'confirmed': 'Confirmed',
+      'shipped': 'Shipped',
+      'delivered': 'Delivered',
+      'cancelled': 'Cancelled'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
+      case 'confirmed': return <CheckCircle2 className="w-4 h-4 text-blue-500" />;
+      case 'shipped': return <Truck className="w-4 h-4 text-purple-500" />;
+      case 'delivered': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      default: return <Package className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -219,7 +266,7 @@ export default function Home() {
           transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
       `}</style>
-
+    
       {/* Brand Logo */}
       <div className="fixed top-4 left-4 md:top-8 md:left-12 z-50">
         <div className="flex items-center gap-2 md:gap-3">
@@ -227,14 +274,98 @@ export default function Home() {
             <ButterflyLogo className="w-6 h-6 md:w-8 md:h-8" />
           </div>
           <div>
-            <h2 className="text-lg md:text-2xl font-headline font-bold text-white tracking-tighter drop-shadow-lg text-primary">LuxeFinds</h2>
-            <p className="text-[7px] uppercase tracking-[0.3em] text-white/40 font-bold -mt-1">Butterfly Collection</p>
+            <h2 className="text-lg md:text-2xl font-headline font-bold text-primary tracking-tighter drop-shadow-lg">Butterfly Store</h2>
+            <p className="text-[7px] uppercase tracking-[0.3em] text-white/40 font-bold -mt-1">Luxury Boutique</p>
           </div>
         </div>
       </div>
 
-      {/* Floating Cart UI */}
+      {/* Floating UI */}
       <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center gap-4">
+        {/* Order History Button */}
+        <Sheet onOpenChange={(open) => open && loadCustomerOrders()}>
+          <SheetTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
+            >
+              <Package className="w-5 h-5 md:w-6 md:h-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-[#0a0a0a] border-r border-white/10 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col box-border shadow-2xl">
+            <SheetHeader className="p-6 md:p-8 border-b border-white/10 bg-black/20 backdrop-blur-md">
+              <SheetTitle className="text-2xl md:text-3xl font-headline italic text-white flex items-center gap-3">
+                <Package className="text-primary" /> My Previous Orders
+              </SheetTitle>
+            </SheetHeader>
+            
+            <ScrollArea className="flex-1 px-6 md:px-8 py-6">
+              {isOrdersLoading ? (
+                <div className="h-[50vh] flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : customerOrders.length === 0 ? (
+                <div className="h-[50vh] flex flex-col items-center justify-center space-y-6 opacity-30">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-white/20 flex items-center justify-center">
+                    <Package className="w-10 h-10" />
+                  </div>
+                  <p className="font-body italic text-lg text-center px-4">No previous orders found.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {customerOrders.map((order) => (
+                    <div key={order.id} className="p-4 bg-white/5 border border-white/10 rounded-lg hover:border-primary/30 transition-all group">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest text-white/40 mb-1">Order ID</p>
+                          <p className="font-mono text-sm font-bold text-primary">#{order.id.slice(-8).toUpperCase()}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="outline" className={cn(
+                            "flex items-center gap-1 border-white/10",
+                            order.status === 'delivered' ? 'text-green-400' : 'text-yellow-400'
+                          )}>
+                            {getStatusIcon(order.status)}
+                            <span className="ml-1">{getStatusLabel(order.status)}</span>
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3 mb-4">
+                        {order.items.slice(0, 2).map((item) => (
+                          <div key={item.id} className="flex gap-3 items-center">
+                            <div className="relative w-10 h-12 rounded overflow-hidden flex-shrink-0">
+                              <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold truncate text-white/80">{item.product.name}</p>
+                              <p className="text-[10px] text-white/40">Qty: {item.quantity}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {order.items.length > 2 && (
+                          <p className="text-[10px] text-primary italic">+{order.items.length - 2} more items...</p>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                        <p className="text-xs text-white/60">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <Link href={`/order/${order.id}`}>
+                          <Button variant="link" size="sm" className="text-primary text-xs h-auto p-0">
+                            Full Details <ArrowRight className="w-3 h-3 ml-1" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </SheetContent>
+        </Sheet>
+
+        {/* Shopping Cart Button */}
         <Sheet>
           <SheetTrigger asChild>
             <div className="relative">
@@ -273,7 +404,7 @@ export default function Home() {
                     <div key={item.id} className="flex gap-4 md:gap-6 group box-border animate-in fade-in slide-in-from-right-4 duration-500">
                       <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/[0.03] shrink-0 overflow-hidden rounded-sm border border-white/5 transition-colors group-hover:border-primary/30">
                         {item.image && (
-                          <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                        <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                         )}
                       </div>
                       <div className="flex-1 flex flex-col justify-between py-1">
@@ -283,13 +414,6 @@ export default function Home() {
                             <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
                           </div>
                           <div className="flex gap-1 md:gap-2">
-                            <button 
-                              onClick={() => handleInquiry(item.name)}
-                              className="text-white/20 hover:text-primary transition-colors p-1"
-                              title="Expert Inquiry"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                            </button>
                             <button 
                               onClick={() => removeFromCart(item.id)}
                               className="text-white/20 hover:text-destructive transition-colors p-1"
@@ -332,20 +456,20 @@ export default function Home() {
                     <span>Subtotal</span>
                     <span>${cartTotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center">
                     <span className="text-xl md:text-2xl font-headline italic">Estimated Total</span>
                     <span className="text-2xl md:text-3xl font-headline font-bold text-primary">${cartTotal.toLocaleString()}</span>
                   </div>
                 </div>
                 
                 <div className="grid grid-cols-1 gap-3">
-                  <Link href="/checkout" className="w-full">
-                    <Button 
-                      className="w-full h-12 md:h-16 bg-primary text-white rounded-none uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm box-border shadow-[0_4px_20px_rgba(var(--primary),0.2)]"
-                    >
-                      Process Order <ArrowRight className="ml-2 w-4 h-4" />
-                    </Button>
-                  </Link>
+                <Link href="/checkout" className="w-full">
+                  <Button 
+                    className="w-full h-12 md:h-16 bg-primary text-white rounded-none uppercase tracking-[0.2em] font-bold hover:bg-white hover:text-primary transition-all duration-500 text-[10px] sm:text-xs md:text-sm box-border shadow-[0_4px_20px_rgba(var(--primary),0.2)]"
+                  >
+                    Process Order <ArrowRight className="ml-2 w-4 h-4" />
+                  </Button>
+                </Link>
                 </div>
                 
                 <div className="flex items-center justify-center gap-2 text-[8px] md:text-[10px] text-white/30 uppercase tracking-[0.3em]">
@@ -521,7 +645,10 @@ export default function Home() {
         </section>
       ))}
 
-      {/* Side Nav Dots - Enhanced Clarity */}
+      {/* Floating Buttons */}
+      <div className="fixed bottom-6 left-6 md:bottom-12 md:left-12 z-50 flex flex-col gap-4">
+        {/* AI Stylist */}
+        {/* Side Nav Dots - Enhanced Clarity */}
       <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5">
         {groupedProducts.map((group, i) => (
           <button
@@ -544,6 +671,7 @@ export default function Home() {
             />
           </button>
         ))}
+      </div>
       </div>
 
       {/* AI Stylist Floating Button */}

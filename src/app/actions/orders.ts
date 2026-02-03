@@ -94,6 +94,38 @@ export async function getOrderById(orderId: string): Promise<OrderWithItems | nu
 }
 
 /**
+ * Get orders by a list of IDs
+ */
+export async function getOrdersByIds(orderIds: string[]): Promise<OrderWithItems[]> {
+  try {
+    const orders = await prisma.order.findMany({
+      where: {
+        id: { in: orderIds }
+      },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    return orders;
+  } catch (error) {
+    console.error('Error fetching orders by IDs:', error);
+    return [];
+  }
+}
+
+/**
  * Get orders by user ID
  */
 export async function getOrdersByUserId(userId: string): Promise<OrderWithItems[]> {
