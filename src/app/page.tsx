@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { getHomePageData, GroupedProducts } from '@/app/actions/page-data';
 import { getOrdersByIds, OrderWithItems } from '@/app/actions/orders';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -78,6 +78,7 @@ export default function Home() {
   // Track orders
   const [customerOrders, setCustomerOrders] = useState<OrderWithItems[]>([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+  const [hasNewUpdates, setHasNewUpdates] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -101,16 +102,75 @@ export default function Home() {
     loadProducts();
   }, [toast]);
 
-  // Fetch previous requests from local storage
+  // Check for order status updates
+  const checkForOrderUpdates = async () => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const savedIds = JSON.parse(localStorage.getItem('butterfly_orders') || '[]');
+      if (savedIds.length === 0) return;
+
+      const orders = await getOrdersByIds(savedIds);
+      const statusCache = JSON.parse(localStorage.getItem('butterfly_status_cache') || '{}');
+      
+      let updatesFound = false;
+      const newCache: Record<string, string> = { ...statusCache };
+
+      orders.forEach(order => {
+        const previousStatus = statusCache[order.id];
+        if (previousStatus && previousStatus !== order.status) {
+          updatesFound = true;
+          // Show luxurious notification
+          toast({
+            title: "Order Update",
+            description: `Your order #${order.id.slice(-8).toUpperCase()} is now ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}.`,
+            action: (
+              <Link href={`/order/${order.id}`}>
+                <Button variant="outline" size="sm" className="h-8 text-[10px] uppercase tracking-widest border-primary text-primary">
+                  Track Piece
+                </Button>
+              </Link>
+            )
+          });
+        }
+        newCache[order.id] = order.status;
+      });
+
+      if (updatesFound) {
+        setHasNewUpdates(true);
+        localStorage.setItem('butterfly_status_cache', JSON.stringify(newCache));
+      } else {
+        // Just refresh the cache silently if no updates but first time loading
+        localStorage.setItem('butterfly_status_cache', JSON.stringify(newCache));
+      }
+      
+      setCustomerOrders(orders);
+    } catch (e) {
+      console.error('Error checking for order updates:', e);
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading) {
+      checkForOrderUpdates();
+    }
+  }, [isLoading]);
+
   const loadCustomerOrders = async () => {
     if (typeof window === 'undefined') return;
     
     setIsOrdersLoading(true);
+    setHasNewUpdates(false);
     try {
       const savedIds = JSON.parse(localStorage.getItem('butterfly_orders') || '[]');
       if (savedIds.length > 0) {
         const orders = await getOrdersByIds(savedIds);
         setCustomerOrders(orders);
+        
+        // Update cache when viewing
+        const newCache: Record<string, string> = {};
+        orders.forEach(o => newCache[o.id] = o.status);
+        localStorage.setItem('butterfly_status_cache', JSON.stringify(newCache));
       }
     } catch (e) {
       console.error('Error loading local orders:', e);
@@ -182,13 +242,6 @@ export default function Home() {
     });
   };
 
-  const handleInquiry = (productName: string) => {
-    toast({
-      title: "Inquiry Sent",
-      description: `A personal stylist will contact you regarding ${productName} shortly.`,
-    });
-  };
-
   const handleImageInteraction = (e: React.MouseEvent<HTMLDivElement>, productId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -225,7 +278,6 @@ export default function Home() {
     }
   };
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-black text-white">
@@ -285,13 +337,20 @@ export default function Home() {
         {/* Order History Button */}
         <Sheet onOpenChange={(open) => open && loadCustomerOrders()}>
           <SheetTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
-            >
-              <Package className="w-5 h-5 md:w-6 md:h-6" />
-            </Button>
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
+              >
+                <Package className="w-5 h-5 md:w-6 md:h-6" />
+                {hasNewUpdates && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold animate-pulse ring-2 ring-black">
+                    <Bell className="w-2 h-2" />
+                  </span>
+                )}
+              </Button>
+            </div>
           </SheetTrigger>
           <SheetContent side="right" className="bg-[#0a0a0a] border-r border-white/10 text-white w-full sm:max-w-md p-0 overflow-hidden flex flex-col box-border shadow-2xl">
             <SheetHeader className="p-6 md:p-8 border-b border-white/10 bg-black/20 backdrop-blur-md">
