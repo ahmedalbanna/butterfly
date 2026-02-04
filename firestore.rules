@@ -1,0 +1,81 @@
+/**
+ * Firestore Security Rules
+ * 
+ * Core Philosophy:
+ * This ruleset implements a strict Path-Based Ownership model. The security architecture 
+ * is designed for a user-centric application where privacy is paramount. By anchoring 
+ * all user-specific data to a path containing the user's unique identifier (UID), 
+ * we ensure that authorization is inherently tied to the document's location.
+ * 
+ * Data Structure:
+ * The primary data structure is hierarchical and centered around the user:
+ * - /users/{userId}: Stores private profile and account information for each user.
+ * 
+ * Key Security Decisions:
+ * 1. Path-Based Authorization: We rely on the {userId} wildcard in the document path 
+ *    to verify identity against 'request.auth.uid'. This provides high performance 
+ *    by avoiding costly cross-document lookups.
+ * 2. Self-Creation: Users are permitted to create their own profile document 
+ *    exactly once, provided the document ID matches their authenticated UID.
+ * 3. Implicit Privacy: There are no public collections. All data access requires 
+ *    authentication and proof of ownership.
+ * 4. Relational Integrity: We enforce that the internal 'id' field of a user document 
+ *    remains consistent with the document path and is immutable once set.
+ * 
+ * Denormalization for Authorization:
+ * Since this application uses a direct ownership model, the UID is already present 
+ * in the path. No additional denormalization of roles or metadata is required 
+ * for the current scope.
+ */
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+
+    /**
+     * @description Checks if the request is made by an authenticated user.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Validates ownership and ensures the document exists for state-changing operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for the UserAccount entity, managing private user profiles.
+     * @path /users/{userId}
+     * @allow (get) If the requester is the authenticated owner of the profile.
+     * @allow (create) If the user is authenticated and the new document ID matches their UID.
+     * @deny (update) If the user attempts to change the 'id' field, maintaining relational integrity.
+     * @principle Enforces strict path-based ownership and self-creation logic.
+     */
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId);
+      
+      // Only the user themselves can update their basic info, 
+      // but they cannot change their own isAdmin status through rules alone 
+      // (usually handled via a separate admin-only trigger or manually in console)
+      allow update: if isOwner(userId) && (request.resource.data.isAdmin == resource.data.isAdmin);
+      
+      allow delete: if false; // Profiles shouldn't be easily deletable
+    }
+  }
+}

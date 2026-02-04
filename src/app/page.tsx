@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { getHomePageData, GroupedProducts } from '@/app/actions/page-data';
 import { getOrdersByIds, OrderWithItems } from '@/app/actions/orders';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck, Bell } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck, Bell, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
@@ -11,6 +11,8 @@ import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
 import { useChat } from '@/context/chat-context';
 import { useToast } from '@/hooks/use-toast';
+import { useUser, useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
 import {
   Sheet,
   SheetContent,
@@ -67,6 +69,8 @@ export default function Home() {
   const { startCall } = useVoiceCall();
   const { openChat } = useChat();
   const { toast } = useToast();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
   
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
@@ -242,6 +246,22 @@ export default function Home() {
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleImageInteraction = (e: React.MouseEvent<HTMLDivElement>, productId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -334,6 +354,31 @@ export default function Home() {
 
       {/* Floating UI */}
       <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center gap-4">
+        {/* Account Button */}
+        {user ? (
+          <div className="flex items-center gap-2">
+            <Link href="/profile" title="View Portfolio">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
+              >
+                <User className="w-5 h-5 md:w-6 md:h-6" />
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <Link href="/login" title="Sign In">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
+            >
+              <User className="w-5 h-5 md:w-6 md:h-6" />
+            </Button>
+          </Link>
+        )}
+
         {/* Order History Button */}
         <Sheet onOpenChange={(open) => open && loadCustomerOrders()}>
           <SheetTrigger asChild>
@@ -706,31 +751,30 @@ export default function Home() {
 
       {/* Floating Buttons */}
       <div className="fixed bottom-6 left-6 md:bottom-12 md:left-12 z-50 flex flex-col gap-4">
-        {/* AI Stylist */}
-        {/* Side Nav Dots - Enhanced Clarity */}
-      <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5">
-        {groupedProducts.map((group, i) => (
-          <button
-            key={i}
-            onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
-            className="group relative flex items-center justify-end"
-          >
-            <div className="absolute right-10 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none translate-x-4 group-hover:translate-x-0">
-              <div className="bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10 rounded-sm shadow-xl">
-                 <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-primary whitespace-nowrap">{group.name}</span>
+        {/* Side Nav Dots */}
+        <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5">
+          {groupedProducts.map((group, i) => (
+            <button
+              key={i}
+              onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
+              className="group relative flex items-center justify-end"
+            >
+              <div className="absolute right-10 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none translate-x-4 group-hover:translate-x-0">
+                <div className="bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10 rounded-sm shadow-xl">
+                   <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-primary whitespace-nowrap">{group.name}</span>
+                </div>
               </div>
-            </div>
-            <div 
-              className={cn(
-                "w-2 h-2 rounded-full transition-all duration-700 border",
-                activeCategoryIndex === i 
-                  ? 'bg-primary border-primary scale-[2.5] shadow-[0_0_15px_hsl(var(--primary)/0.6)]' 
-                  : 'bg-white/10 border-white/20 hover:bg-white/40 hover:scale-125'
-              )} 
-            />
-          </button>
-        ))}
-      </div>
+              <div 
+                className={cn(
+                  "w-2 h-2 rounded-full transition-all duration-700 border",
+                  activeCategoryIndex === i 
+                    ? 'bg-primary border-primary scale-[2.5] shadow-[0_0_15px_hsl(var(--primary)/0.6)]' 
+                    : 'bg-white/10 border-white/20 hover:bg-white/40 hover:scale-125'
+                )} 
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* AI Stylist Floating Button */}

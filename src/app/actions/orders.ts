@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { Order, OrderItem } from '@prisma/client';
+import { syncUserToDb } from './users';
 
 export type CreateOrderData = {
   userId?: string;
@@ -32,11 +33,21 @@ export type OrderWithItems = Order & {
  */
 export async function createOrder(data: CreateOrderData): Promise<Order | null> {
   try {
+    // 1. Ensure the user exists in our CRM/Contacts database
+    // Even if it's a guest order, we want them in "Contacts"
+    const { user } = await syncUserToDb({
+      id: data.userId,
+      email: data.customerEmail,
+      name: data.customerName
+    });
+
+    const finalUserId = user?.id || data.userId;
     const total = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    // 2. Create the order
     const order = await prisma.order.create({
       data: {
-        userId: data.userId,
+        userId: finalUserId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         customerPhone: data.customerPhone,
