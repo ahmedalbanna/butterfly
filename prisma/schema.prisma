@@ -37,6 +37,7 @@ model Product {
   care        String   @db.Text
   image       String   // Primary image URL
   images      String[] // Array of image URLs
+  modelImages String[] @default([]) // AI-generated model photos showing accessories being worn
   video       String?  // Optional video URL (MP4, WebM, etc.)
   featured    Boolean  @default(false)
   stock       Int      @default(100)

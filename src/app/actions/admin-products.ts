@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { Product, SocialMediaPost } from '@prisma/client';
 import { productImageAnalyzerFlow } from '@/ai/flows/product-image-analyzer-flow';
+import { generateProductModelPhotoFlow } from '@/ai/flows/generate-product-model-photo';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { existsSync } from 'fs';
@@ -502,6 +503,155 @@ export async function retrySocialMediaPost(postId: string): Promise<{ success: b
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to retry post'
+    };
+  }
+}
+
+/**
+ * Generate a model photo for a product using AI
+ */
+export async function generateModelPhoto(
+  productId: string,
+  style?: 'elegant' | 'casual' | 'editorial' | 'luxury'
+): Promise<{ success: boolean; imageBase64?: string; prompt?: string; error?: string }> {
+  try {
+    // Fetch the product
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        category: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    if (!product) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    console.log(`Generating model photo for product: ${product.name}`);
+
+    // Call the AI flow to generate the model photo
+    const result = await generateProductModelPhotoFlow({
+      productName: product.name,
+      productCategory: product.category.name,
+      productDescription: product.description,
+      style: style || 'luxury',
+    });
+
+    console.log('Model photo generated successfully');
+
+    return {
+      success: true,
+      imageBase64: result.imageBase64,
+      prompt: result.prompt,
+    };
+  } catch (error) {
+    console.error('Error generating model photo:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to generate model photo'
+    };
+  }
+}
+
+/**
+ * Save a generated model photo to a product
+ */
+export async function saveProductModelImage(
+  productId: string,
+  imageBase64: string
+): Promise<{ success: boolean; imageUrl?: string; error?: string }> {
+  try {
+    // Create model-images directory if it doesn't exist
+    const modelImagesDir = path.join(process.cwd(), 'public', 'model-images');
+    if (!existsSync(modelImagesDir)) {
+      await mkdir(modelImagesDir, { recursive: true });
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const filename = `model-${productId}-${timestamp}.png`;
+    const filepath = path.join(modelImagesDir, filename);
+
+    // Convert base64 to buffer and save
+    // Remove data URL prefix if present
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+    await writeFile(filepath, buffer);
+
+    // Generate public URL
+    const imageUrl = `/model-images/${filename}`;
+
+    // Update the product with the new model image
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { modelImages: true }
+    });
+
+    if (!product) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        modelImages: [...product.modelImages, imageUrl]
+      }
+    });
+
+    console.log(`Model image saved for product ${productId}: ${imageUrl}`);
+
+    return {
+      success: true,
+      imageUrl
+    };
+  } catch (error) {
+    console.error('Error saving model image:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to save model image'
+    };
+  }
+}
+
+/**
+ * Delete a model image from a product
+ */
+export async function deleteProductModelImage(
+  productId: string,
+  imageUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { modelImages: true }
+    });
+
+    if (!product) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    // Remove the image URL from the array
+    const updatedModelImages = product.modelImages.filter(img => img !== imageUrl);
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: {
+        modelImages: updatedModelImages
+      }
+    });
+
+    console.log(`Model image removed from product ${productId}: ${imageUrl}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting model image:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete model image'
     };
   }
 }

@@ -4,17 +4,25 @@ This guide explains how to set up Ollama for the AI-powered product creation fea
 
 ## Overview
 
-The AI Product Creator uses Ollama with the **llava** vision model to analyze product images and automatically generate:
-- Product names
-- Luxury-focused descriptions
-- Category suggestions
-- Price recommendations
+LuxeFinds uses Ollama with two AI models:
+
+1. **llava** (Vision Model) - For the AI Product Creator to analyze product images and generate:
+   - Product names
+   - Luxury-focused descriptions
+   - Category suggestions
+   - Price recommendations
+
+2. **stable-diffusion** (Image Generation Model) - For the Virtual Try-On feature to generate:
+   - Professional model photos showing accessories being worn
+   - Lifestyle images for marketing
+   - Multiple photography styles (luxury, elegant, editorial, casual)
 
 ## Prerequisites
 
 - Docker and Docker Compose installed
-- At least 8GB of free disk space (for the llava model)
-- 4GB+ RAM available for Ollama
+- At least 12GB of free disk space (4.7GB for llava + 3.5GB for stable-diffusion + overhead)
+- 6GB+ RAM available for Ollama (8GB recommended for image generation)
+- GPU recommended for faster image generation (CPU works but slower)
 
 ## Quick Start
 
@@ -30,6 +38,7 @@ This script will:
 1. Start the Ollama Docker container
 2. Wait for the service to be ready
 3. Download the llava vision model (~4.7GB)
+4. Download the stable-diffusion image generation model (~3.5GB)
 
 ### Option 2: Manual Setup
 
@@ -83,6 +92,7 @@ You should see the llava model listed in the response.
 | **llava** | ~4.7GB | Default vision model, good balance | `ollama pull llava` |
 | **llava:13b** | ~7.3GB | Higher quality, more accurate | `ollama pull llava:13b` |
 | **bakllava** | ~4.7GB | Alternative vision model | `ollama pull bakllava` |
+| **stable-diffusion** | ~3.5GB | Image generation for model photos | `ollama pull stable-diffusion` |
 
 To change the model, update `src/ai/genkit.ts`:
 
@@ -214,6 +224,12 @@ docker compose down -v
 │  │   llava   │  │
 │  │   Model   │  │
 │  └───────────┘  │
+│                 │
+│  ┌───────────┐  │
+│  │  stable-  │  │
+│  │ diffusion │  │
+│  │   Model   │  │
+│  └───────────┘  │
 └─────────────────┘
 ```
 
@@ -258,11 +274,41 @@ curl -fsSL https://ollama.ai/install.sh | sh
 # Windows
 # Download from https://ollama.ai/download
 
-# Pull the model
+# Pull the models
 ollama pull llava
+ollama pull stable-diffusion
 
 # Run Ollama
 ollama serve
 ```
 
 Then update `src/ai/genkit.ts` to use the local server (already configured for `http://127.0.0.1:11434`).
+
+## Features Using Ollama
+
+### 1. AI Product Creator (llava model)
+- **Location**: `/admin/products/ai-create`
+- **Purpose**: Analyze product images and generate descriptions
+- **Model**: llava (vision)
+- **Processing Time**: 5-10 seconds per image
+- **Documentation**: See `AI_PRODUCT_CREATOR.md`
+
+### 2. Virtual Try-On (stable-diffusion model)
+- **Location**: `/admin/products` (User icon button)
+- **Purpose**: Generate model photos showing accessories being worn
+- **Model**: stable-diffusion (image generation)
+- **Processing Time**: 30-60 seconds per image
+- **Documentation**: See `VIRTUAL_TRYON_ADMIN_FEATURE.md`
+
+## Performance Tips
+
+### Image Generation (Stable Diffusion)
+- **With GPU**: 20-30 seconds per image
+- **Without GPU**: 45-60 seconds per image
+- **Optimization**: Close other applications to free up resources
+- **Batch Processing**: Generate images one at a time to avoid memory issues
+
+### Vision Analysis (llava)
+- **Processing**: 5-10 seconds per image
+- **Optimization**: Resize large images before uploading
+- **Best Results**: Use clear, well-lit product photos

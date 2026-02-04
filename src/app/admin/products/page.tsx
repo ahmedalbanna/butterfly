@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAllProductsForAdmin, createProduct, updateProduct, deleteProduct, toggleProductFeatured, publishProductToSocial, getSocialMediaPosts } from '@/app/actions/admin-products';
+import { getAllProductsForAdmin, createProduct, updateProduct, deleteProduct, toggleProductFeatured, publishProductToSocial, getSocialMediaPosts, generateModelPhoto, saveProductModelImage, deleteProductModelImage } from '@/app/actions/admin-products';
 import { getCategories } from '@/app/actions/categories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus, Edit, Trash2, Star, Package, Share2, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Star, Package, Share2, Clock, CheckCircle2, XCircle, User, Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Product, Category, SocialMediaPost } from '@prisma/client';
 import Image from 'next/image';
@@ -44,6 +44,14 @@ export default function ProductsPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [socialPosts, setSocialPosts] = useState<Record<string, SocialMediaPost[]>>({});
+
+  // Model photo generation state
+  const [isModelPhotoDialogOpen, setIsModelPhotoDialogOpen] = useState(false);
+  const [modelPhotoProduct, setModelPhotoProduct] = useState<ProductWithCategory | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState<'elegant' | 'casual' | 'editorial' | 'luxury'>('luxury');
 
   useEffect(() => {
     loadData();
@@ -237,6 +245,107 @@ export default function ProductsPage() {
         return <XCircle className="w-4 h-4 text-red-500" />;
       default:
         return null;
+    }
+  };
+
+  // Model photo generation handlers
+  const handleOpenModelPhotoDialog = (product: ProductWithCategory) => {
+    setModelPhotoProduct(product);
+    setGeneratedImage(null);
+    setGeneratedPrompt(null);
+    setSelectedStyle('luxury');
+    setIsModelPhotoDialogOpen(true);
+  };
+
+  const handleGenerateModelPhoto = async () => {
+    if (!modelPhotoProduct) return;
+
+    setIsGenerating(true);
+    setGeneratedImage(null);
+    setGeneratedPrompt(null);
+
+    try {
+      const result = await generateModelPhoto(modelPhotoProduct.id, selectedStyle);
+      
+      if (result.success && result.imageBase64) {
+        setGeneratedImage(result.imageBase64);
+        setGeneratedPrompt(result.prompt || null);
+        toast({
+          title: 'Success',
+          description: 'Model photo generated successfully!',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to generate model photo',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveModelImage = async () => {
+    if (!modelPhotoProduct || !generatedImage) return;
+
+    try {
+      const result = await saveProductModelImage(modelPhotoProduct.id, generatedImage);
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Model image saved to product!',
+        });
+        setIsModelPhotoDialogOpen(false);
+        loadData(); // Refresh products
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to save model image',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteModelImage = async (productId: string, imageUrl: string) => {
+    if (!confirm('Are you sure you want to delete this model image?')) return;
+
+    try {
+      const result = await deleteProductModelImage(productId, imageUrl);
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Model image deleted',
+        });
+        loadData(); // Refresh products
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to delete model image',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -467,6 +576,15 @@ export default function ProductsPage() {
                         <Button
                           size="icon"
                           variant="ghost"
+                          onClick={() => handleOpenModelPhotoDialog(product)}
+                          className="h-8 w-8 text-white/60 hover:text-purple-400 hover:bg-purple-400/10"
+                          title="Generate Model Photo"
+                        >
+                          <User className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
                           onClick={() => handleOpenSocialDialog(product)}
                           className="h-8 w-8 text-white/60 hover:text-blue-400 hover:bg-blue-400/10"
                           title="Share to Social Media"
@@ -498,6 +616,141 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Model Photo Generation Dialog */}
+      <Dialog open={isModelPhotoDialogOpen} onOpenChange={setIsModelPhotoDialogOpen}>
+        <DialogContent className="bg-[#0a0a0a] border-white/20 text-white max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-headline italic text-primary">
+              Generate Model Photo
+            </DialogTitle>
+          </DialogHeader>
+          
+          {modelPhotoProduct && (
+            <div className="space-y-6">
+              {/* Product Info */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <div className="w-16 h-16 bg-white/5 rounded overflow-hidden relative shrink-0">
+                  {modelPhotoProduct.image && (
+                    <Image src={modelPhotoProduct.image} alt={modelPhotoProduct.name} fill className="object-cover" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-headline text-white">{modelPhotoProduct.name}</p>
+                  <p className="text-sm text-white/60">{modelPhotoProduct.category.name}</p>
+                  <p className="text-xs text-white/40 mt-1">AI will generate a luxury model photo showing this accessory being worn</p>
+                </div>
+              </div>
+
+              {/* Style Selection */}
+              <div className="space-y-3">
+                <label className="text-xs uppercase tracking-wider text-white/60 font-bold">Photography Style</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['luxury', 'elegant', 'editorial', 'casual'] as const).map((style) => (
+                    <button
+                      key={style}
+                      onClick={() => setSelectedStyle(style)}
+                      className={`p-3 rounded-lg border text-sm capitalize transition-all ${
+                        selectedStyle === style
+                          ? 'bg-primary/20 border-primary text-primary'
+                          : 'bg-white/5 border-white/10 text-white/60 hover:border-primary/30'
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Existing Model Images */}
+              {modelPhotoProduct.modelImages && modelPhotoProduct.modelImages.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-xs uppercase tracking-wider text-white/60 font-bold">Existing Model Photos</label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {modelPhotoProduct.modelImages.map((imageUrl, index) => (
+                      <div key={index} className="relative group aspect-square bg-white/5 rounded-lg overflow-hidden border border-white/10">
+                        <Image src={imageUrl} alt={`Model ${index + 1}`} fill className="object-cover" />
+                        <button
+                          onClick={() => handleDeleteModelImage(modelPhotoProduct.id, imageUrl)}
+                          className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Generate Button */}
+              <Button
+                onClick={handleGenerateModelPhoto}
+                disabled={isGenerating}
+                className="w-full bg-primary hover:bg-primary/80 text-white disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating... (this may take 30-60 seconds)
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4 mr-2" />
+                    Generate Model Photo
+                  </>
+                )}
+              </Button>
+
+              {/* Generated Image Preview */}
+              {generatedImage && (
+                <div className="space-y-3">
+                  <label className="text-xs uppercase tracking-wider text-white/60 font-bold">Generated Image</label>
+                  <div className="relative aspect-square bg-white/5 rounded-lg overflow-hidden border border-primary/30">
+                    <Image 
+                      src={generatedImage.startsWith('data:') ? generatedImage : `data:image/png;base64,${generatedImage}`} 
+                      alt="Generated model photo" 
+                      fill 
+                      className="object-cover" 
+                    />
+                  </div>
+                  {generatedPrompt && (
+                    <p className="text-xs text-white/40 italic">Prompt: {generatedPrompt}</p>
+                  )}
+                  
+                  {/* Save/Regenerate Buttons */}
+                  <div className="flex gap-3">
+                    <Button
+                      onClick={handleSaveModelImage}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Save to Product
+                    </Button>
+                    <Button
+                      onClick={handleGenerateModelPhoto}
+                      variant="outline"
+                      className="flex-1 border-white/20 text-white hover:bg-white/10"
+                    >
+                      Regenerate
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Close Button */}
+              {!generatedImage && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModelPhotoDialogOpen(false)}
+                  className="w-full border-white/20 text-white hover:bg-white/10"
+                >
+                  Close
+                </Button>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Social Media Publishing Dialog */}
       <Dialog open={isSocialDialogOpen} onOpenChange={setIsSocialDialogOpen}>

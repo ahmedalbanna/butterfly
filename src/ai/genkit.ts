@@ -10,6 +10,10 @@ export const ai = genkit({
         {
           name: 'llava',
           type: 'generate',
+        },
+        {
+          name: 'stable-diffusion',
+          type: 'generate',
         }
       ],
       serverAddress: 'http://localhost:11434', // default Ollama address
