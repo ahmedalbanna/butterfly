@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
+import { addToCallQueue, publishAdminNotification } from '@/lib/redis';
 
 /**
  * Create a new voice call session
@@ -23,6 +24,21 @@ export async function POST(request: NextRequest) {
         customerName,
         status: 'ringing',
       },
+    });
+
+    // Add to Redis queue
+    await addToCallQueue(session.id, {
+      customerId,
+      customerName,
+      timestamp: Date.now(),
+      priority: 0,
+    });
+
+    // Publish notification to all admins
+    await publishAdminNotification('new-call', {
+      callId: session.id,
+      customerId,
+      customerName,
     });
 
     console.log(`[Voice Call] New call initiated: ${session.id.slice(0, 8)} from ${customerName}`);
@@ -119,6 +135,29 @@ export async function PATCH(request: NextRequest) {
       where: { id: callId },
       data: updateData,
     });
+
+    // Publish notification based on status change
+    if (status === 'active') {
+      await publishAdminNotification('call-answered', {
+        callId,
+        adminId,
+        adminName,
+      });
+    } else if (status === 'ended') {
+      await publishAdminNotification('call-ended', {
+        callId,
+        duration,
+      });
+    } else if (status === 'missed') {
+      await publishAdminNotification('call-missed', {
+        callId,
+      });
+    } else if (status === 'declined') {
+      await publishAdminNotification('call-cancelled', {
+        callId,
+        adminId,
+      });
+    }
 
     console.log(`[Voice Call] Call ${callId.slice(0, 8)} updated to: ${status}`);
 

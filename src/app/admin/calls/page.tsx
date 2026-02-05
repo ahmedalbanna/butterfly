@@ -5,10 +5,12 @@ import { getAllCallSessions, getCallStats, updateCallStatus, deleteCallSession, 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Clock, Trash2, PhoneCall, PhoneMissed, PhoneOff, Radio, Smartphone } from 'lucide-react';
+import { Phone, Clock, Trash2, PhoneCall, PhoneMissed, PhoneOff, Radio, Smartphone, Bell, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceCallSession } from '@prisma/client';
 import { AdminVoiceCallOverlay } from '@/components/admin-voice-call-overlay';
+import { useAdminNotifications } from '@/hooks/use-admin-notifications';
+import { useAdminPresence, useOnlineAdmins } from '@/hooks/use-admin-presence';
 
 export default function CallsPage() {
   const [calls, setCalls] = useState<VoiceCallSession[]>([]);
@@ -31,6 +33,68 @@ export default function CallsPage() {
   // Mock admin info (in production, get from auth context)
   const adminId = 'admin-001';
   const adminName = 'Admin Assistant';
+
+  // Admin presence tracking
+  useAdminPresence({
+    adminId,
+    adminName,
+    initialStatus: 'online',
+    activeCall: activeCallSession?.id || null,
+  });
+
+  // Get online admins
+  const { admins: onlineAdmins } = useOnlineAdmins();
+
+  // Real-time notifications
+  const { isConnected: notificationsConnected } = useAdminNotifications({
+    adminId,
+    onNotification: (notification) => {
+      console.log('[Admin Calls] Notification received:', notification);
+
+      // Handle different notification types
+      switch (notification.event) {
+        case 'new-call':
+          toast({
+            title: '📞 New Incoming Call',
+            description: `${notification.data.customerName} is calling`,
+            duration: 10000,
+          });
+          // Refresh data to show new call
+          loadData();
+          break;
+
+        case 'call-answered':
+          if (notification.data.adminId !== adminId) {
+            toast({
+              title: 'Call Answered',
+              description: `${notification.data.adminName} answered the call`,
+            });
+            loadData();
+          }
+          break;
+
+        case 'call-ended':
+          toast({
+            title: 'Call Ended',
+            description: `Call duration: ${Math.round((notification.data.duration || 0) / 60)} minutes`,
+          });
+          loadData();
+          break;
+
+        case 'call-missed':
+          toast({
+            title: '⚠️ Missed Call',
+            description: 'A call was not answered',
+            variant: 'destructive',
+          });
+          loadData();
+          break;
+      }
+    },
+    onError: (error) => {
+      console.error('[Admin Calls] Notification error:', error);
+    },
+  });
 
   useEffect(() => {
     loadData();
@@ -190,9 +254,30 @@ export default function CallsPage() {
   return (
     <div className="p-8 space-y-8">
       {/* Header */}
-      <div className="border-b border-white/10 pb-6">
-        <h1 className="text-4xl font-headline italic text-white mb-2">Voice Calls</h1>
-        <p className="text-sm text-white/60 uppercase tracking-wider">Monitor customer voice call sessions</p>
+      <div className="border-b border-white/10 pb-6 mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-headline italic text-white mb-2">Voice Calls</h1>
+          <p className="text-sm text-white/60 uppercase tracking-wider">Monitor customer voice call sessions</p>
+        </div>
+        
+        {/* Status Indicators */}
+        <div className="flex items-center gap-4">
+          {/* Notifications Status */}
+          <div className="flex items-center gap-2">
+            <Bell className={`h-4 w-4 ${notificationsConnected ? 'text-green-400' : 'text-red-400'}`} />
+            <span className="text-sm text-white/60">
+              {notificationsConnected ? 'Live' : 'Offline'}
+            </span>
+          </div>
+          
+          {/* Online Admins */}
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            <span className="text-sm text-white/60">
+              {onlineAdmins.length} {onlineAdmins.length === 1 ? 'Admin' : 'Admins'} Online
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
