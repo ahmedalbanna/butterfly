@@ -1,43 +1,51 @@
 # 🤖 Information for Future Agents
 
-This document provides critical technical context for AI agents working on the **LuxeFinds** project.
+This document provides critical technical context for AI agents working on the **Butterfly Store** (LuxeFinds) project.
 
 ## 🏛️ Architecture Overview
 
-LuxeFinds is built as a **Cinematic Single-Page Experience** with secondary routes for Checkout and Customer Service. It relies heavily on React Context for real-time interactivity.
+The Butterfly Store is an elite digital boutique built with **Next.js 15**, **Firebase**, and **PostgreSQL**. It utilizes a **Cinematic Engine** for product discovery and a robust **Intelligence Suite** for administrative management.
 
 ### Key State Managers (Contexts)
 
 1. **`CartProvider`**: Manages the luxury bag. Persists to `localStorage` under `luxefinds_cart`.
-2. **`ChatProvider`**: Handles the AI Stylist conversation. Integrates with the `aiStylistChat` server action.
-3. **`VoiceCallProvider`**: Manages the global voice call state, allowing the call overlay to persist across route changes.
+2. **`ChatProvider`**: Real-time concierge messaging with a dedicated polling/heartbeat system.
+3. **`VoiceCallProvider`**: Manages WebRTC-based voice sessions with real-time audio visualization.
+4. **`SearchProvider`**: Controls the global, full-screen luxury discovery overlay.
 
-## 🧠 AI Integration (Genkit)
+### 🔄 Database Synchronization & CRM
+- **Dual-Layer Storage**: Authentication and role-based profiles are stored in **Firestore**, while the product catalog, order ledger, and CRM data reside in **PostgreSQL**.
+- **Unified Contacts**: Every person interacting with the boutique (Account holders OR Guest shoppers) must be synchronized via the `syncUserToDb` action. This ensures the **Admin Contacts** page remains an exhaustive source of truth for elite clientele.
 
-The AI logic is located in `src/ai/flows/`. 
+## 🧠 AI Integration (Genkit & Ollama)
 
-- **Persona**: "The Luxe Stylist". Tone must be sophisticated, elegant, and professional. Use words like "exquisite", "meticulous", "timeless".
-- **Models**: Primarily uses `googleai/gemini-2.5-flash` for high-speed, high-quality responses.
+- **The Luxe Stylist**: Tone is sophisticated, meticulous, and professional. (Persona located in `src/ai/flows/`).
+- **Vision AI**: Uses **Ollama (llava)** for the **AI Product Creator**. Admins can upload images to automatically generate luxury descriptions and metadata.
+- **Stable Diffusion**: Utilized for generating lifestyle "Model Photos" for pieces in the collection.
+
+## 🛡️ Security & Authorization
+
+- **Admin Guard**: Access to `/admin` is strictly controlled by the `AdminLayout`. It verifies the `isAdmin: true` flag within the user's Firestore profile (`/users/{uid}`).
+- **Stock Integrity**: The `createOrder` server action uses Prisma transactions to perform **atomic stock validation**, preventing the over-selling of limited-edition pieces.
 
 ## 🎨 UI/UX Guidelines
 
-- **Typography**: `Alegreya` is the primary serif font used for both headings and body to maintain a luxury "editorial" feel.
-- **Colors**:
-  - `Primary`: Rose Gold / Dusty Pink (`hsl(351, 33%, 58%)`).
-  - `Background`: Deep Black (`#000000`) for the cinematic mode, Off-white for light pages.
-- **Effects**:
-  - `TypewriterEffect`: Used on home page data reveals to prevent information overload and add a "live" feel.
-  - `Magic Sparkles`: Triggered on image interactions to simulate the "shimmer" of jewelry.
+- **Typography**: `Alegreya` (Serif) is used for its editorial, high-fashion aesthetic.
+- **Cinematic Effects**:
+  - `TypewriterEffect`: For rhythmic data reveals.
+  - `Magic Sparkles`: For visual resonance during image interactions.
+  - `Audio Visualization`: Dynamic pulsing meters during voice calls.
+- **Colors**: Primary is **Golden Yellow** (`hsl(45, 100%, 50%)`) on a **Deep Black** (`#000000`) background.
 
 ## 🛠️ Important Files
 
-- `src/lib/products.ts`: Central source of truth for all boutique items.
-- `src/app/page.tsx`: The core cinematic engine. Uses Intersection Observer for category tracking.
-- `src/components/voice-call-overlay.tsx`: The global UI for the simulated call experience.
-- `src/components/chat-overlay.tsx`: The full-screen immersive AI chat interface.
+- `src/lib/db.ts`: PostgreSQL connection pool using Prisma.
+- `src/app/actions/`: Central hub for CRM, Order, and Product logic (Server Actions).
+- `src/hooks/use-webrtc-call.ts`: Core logic for P2P audio and recording.
+- `src/app/order/[id]/page.tsx`: The "Boutique Ledger" view for acquisition tracking.
 
 ## ⚠️ Constraints
 
-- **No Binary Files**: Do not generate images or binary assets. Use `PlaceHolderImages` from `src/lib/placeholder-images.ts`.
-- **Client Components**: Most interaction-heavy components must use `'use client'`.
-- **Frugality**: Keep code concise and follow the existing luxury aesthetic.
+- **No Binary Files**: Do not generate images. Use `PlaceHolderImages` from `src/lib/placeholder-images.ts`.
+- **Client Components**: All interaction-heavy modules MUST use `'use client'`.
+- **Frugality**: Maintain the minimalist, high-contrast luxury aesthetic. Avoid cluttered layouts.
