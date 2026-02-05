@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { createCustomerMessage } from '@/app/actions/messages';
 import { Mail, Phone, MapPin, Send, CheckCircle, Headphones } from 'lucide-react';
 import { TestCallButton } from '@/components/test-call-button';
 
-export default function ContactPage() {
+function ContactForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId');
@@ -309,5 +309,17 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-primary">Loading...</div>
+      </div>
+    }>
+      <ContactForm />
+    </Suspense>
   );
 }

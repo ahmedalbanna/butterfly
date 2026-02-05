@@ -327,11 +327,79 @@ GROUP BY status;
 
 ---
 
+## 🔴 Redis Signaling Setup
+
+The voice call system uses **Redis** for WebRTC signaling with **Server-Sent Events (SSE)** for real-time message delivery.
+
+### Features
+- ✅ **Persistent Storage**: Signaling messages survive server restarts
+- ✅ **Horizontal Scalability**: Multiple Next.js instances can share signaling state
+- ✅ **Real-Time Delivery**: Redis Pub/Sub eliminates polling delays
+- ✅ **Automatic Cleanup**: Messages expire after 10 minutes (TTL)
+- ✅ **Fallback Support**: Automatically falls back to polling if SSE fails
+
+### Quick Start
+
+1. **Start Redis** (already configured in docker-compose.yml):
+```bash
+docker compose up -d redis
+```
+
+2. **Verify Redis is running**:
+```bash
+docker compose exec redis redis-cli ping
+# Expected: PONG
+```
+
+3. **Environment Variable** (optional):
+```bash
+# .env (defaults to redis://localhost:6379)
+REDIS_URL=redis://localhost:6379
+```
+
+### How It Works
+
+**Message Flow:**
+```
+Customer → POST /api/calls/signal → Redis List + Pub/Sub → SSE → Admin
+Admin → POST /api/calls/signal → Redis List + Pub/Sub → SSE → Customer
+```
+
+**Redis Keys:**
+- `signal:{callId}:messages` - List of signaling messages (offers, answers, ICE candidates)
+- `signal:{callId}:channel` - Pub/Sub channel for real-time notifications
+
+**Client Behavior:**
+1. Connects to `/api/calls/signal/subscribe` via EventSource (SSE)
+2. Receives real-time notifications via Redis Pub/Sub
+3. Falls back to polling `/api/calls/signal` (GET) if SSE fails
+
+### Architecture Files
+- `src/lib/redis.ts` - Redis client singleton with connection management
+- `src/app/api/calls/signal/route.ts` - Signaling API (POST/GET/DELETE)
+- `src/app/api/calls/signal/subscribe/route.ts` - SSE endpoint for real-time notifications
+- `src/hooks/use-webrtc-call.ts` - WebRTC hook with SSE integration
+
+### Production Configuration
+
+**Redis Settings in docker-compose.yml:**
+- 256MB memory limit with LRU eviction policy
+- AOF persistence enabled
+- Health checks configured
+
+**For Production Deployment:**
+```bash
+# Use Redis Cloud, AWS ElastiCache, or similar
+REDIS_URL=rediss://username:password@your-redis-host:6379
+```
+
+---
+
 ## 🚀 Production Checklist
 
 - [ ] Use HTTPS (required for microphone access)
 - [ ] Configure custom TURN server with credentials in `.env`
-- [ ] Set up Redis for signaling (instead of in-memory)
+- [x] ✅ Set up Redis for signaling (using Server-Sent Events + Pub/Sub)
 - [ ] Enable audio recording with transcription
 - [ ] Add call recording storage (S3/CloudStorage)
 - [ ] Set up monitoring and alerting

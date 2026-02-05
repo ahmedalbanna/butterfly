@@ -1,17 +1,20 @@
 import { NextRequest } from 'next/server';
+import { getRedisClient } from '@/lib/redis';
 
 /**
- * WebRTC Signaling endpoint (using polling fallback)
+ * WebRTC Signaling endpoint using Redis
  * Stores and retrieves signaling messages for WebRTC negotiation
  */
 
-// In-memory storage for signaling messages (consider Redis for production)
-const signalingMessages = new Map<string, Array<{
+const MESSAGE_TTL = 600; // 10 minutes
+const MAX_MESSAGES = 50;
+
+interface SignalingMessage {
   type: string;
   sender: string;
   data: any;
   timestamp: number;
-}>>();
+}
 
 /**
  * Send signaling message (offer, answer, ice-candidate)
@@ -28,23 +31,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store signaling message
-    if (!signalingMessages.has(callId)) {
-      signalingMessages.set(callId, []);
-    }
+    const redis = getRedisClient();
+    const messageKey = `signal:${callId}:messages`;
+    const channelKey = `signal:${callId}:channel`;
 
-    const messages = signalingMessages.get(callId)!;
-    messages.push({
+    // Create message object
+    const message: SignalingMessage = {
       type,
       sender,
       data,
       timestamp: Date.now(),
-    });
+    };
 
-    // Keep only last 50 messages and messages from last 5 minutes
-    const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-    const filtered = messages.filter(m => m.timestamp > fiveMinutesAgo).slice(-50);
-    signalingMessages.set(callId, filtered);
+    // Store message in Redis list
+    await redis.rpush(messageKey, JSON.stringify(message));
+
+    // Set TTL on the message list
+    await redis.expire(messageKey, MESSAGE_TTL);
+
+    // Trim list to keep only last MAX_MESSAGES
+    await redis.ltrim(messageKey, -MAX_MESSAGES, -1);
+
+    // Publish notification to channel for real-time delivery
+    await redis.publish(channelKey, JSON.stringify(message));
 
     console.log(`[Signaling] ${type} from ${sender} for call ${callId.slice(0, 8)}`);
 
@@ -62,7 +71,7 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Poll for signaling messages
+ * Poll for signaling messages (fallback for clients without SSE support)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -78,7 +87,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const messages = signalingMessages.get(callId) || [];
+    const redis = getRedisClient();
+    const messageKey = `signal:${callId}:messages`;
+
+    // Get all messages from Redis
+    const rawMessages = await redis.lrange(messageKey, 0, -1);
+    const messages: SignalingMessage[] = rawMessages.map(msg => JSON.parse(msg));
     
     // Filter messages for this recipient (sent by the other party)
     const otherSender = recipient === 'customer' ? 'admin' : 'customer';
@@ -128,7 +142,13 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    signalingMessages.delete(callId);
+    const redis = getRedisClient();
+    const messageKey = `signal:${callId}:messages`;
+
+    // Delete the messages list from Redis
+    await redis.del(messageKey);
+
+    console.log(`[Signaling] Cleaned up messages for call ${callId.slice(0, 8)}`);
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -141,21 +161,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
-}
-
-// Cleanup old signaling messages every 5 minutes
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now();
-    const fiveMinutesAgo = now - 5 * 60 * 1000;
-    
-    for (const [callId, messages] of signalingMessages.entries()) {
-      const filtered = messages.filter(m => m.timestamp > fiveMinutesAgo);
-      if (filtered.length === 0) {
-        signalingMessages.delete(callId);
-      } else {
-        signalingMessages.set(callId, filtered);
-      }
-    }
-  }, 5 * 60 * 1000);
 }

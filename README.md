@@ -6,7 +6,7 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 
 - **🎬 Cinematic UI:** A scroll-snap mandatory layout with immersive product displays and elegant typography.
 - **🤖 AI Stylist Chat:** An intelligent fashion consultant available 24/7 to provide personalized advice.
-- **📞 Voice Stylist Call:** A simulated high-end concierge call experience for detailed product inquiries.
+- **📞 Voice Stylist Call:** Real-time WebRTC voice calls with Redis-powered signaling for product inquiries.
 - **🎨 AI Product Creator:** Upload product images and let AI generate luxury descriptions automatically (Admin feature).
 - **✨ Magic Interactions:** Visual feedback with sparkle effects and smooth "typewriter" data reveals.
 - **🛍️ Luxury Bag:** A sophisticated shopping cart experience with seamless checkout transition.
@@ -18,6 +18,7 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 - **AI Engine:** [Genkit](https://firebase.google.com/docs/genkit) (Google Gemini 2.5 Flash)
 - **Vision AI:** [Ollama](https://ollama.ai/) with llava model for image analysis
 - **Database:** [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
+- **Cache & Signaling:** [Redis](https://redis.io/) with Server-Sent Events for WebRTC
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Fonts:** [Alegreya](https://fonts.google.com/specimen/Alegreya) (Serif)
 
@@ -37,13 +38,13 @@ Welcome to **LuxeFinds**, an elite digital boutique for high-end accessories. Th
 
 The app will work with hardcoded product data if no database is configured.
 
-### Full Setup (With PostgreSQL Database) - **Recommended**
+### Full Setup (With PostgreSQL + Redis) - **Recommended**
 
-For full e-commerce functionality including order persistence, cart sync, and chat history:
+For full e-commerce functionality including order persistence, cart sync, chat history, and voice calls:
 
-1. **Start PostgreSQL with Docker:**
+1. **Start PostgreSQL and Redis with Docker:**
    ```bash
-   docker compose up -d
+   docker compose up -d postgres redis
    ```
    
 2. **Setup Database Schema and Seed Data:**
@@ -97,8 +98,9 @@ See [`OLLAMA_SETUP.md`](./OLLAMA_SETUP.md) for detailed setup instructions and [
 - `src/lib/`: Product data, database client, and utility functions.
 - `prisma/`: Database schema and migrations.
 
-## 🗄️ Database
+## 🗄️ Database & Cache
 
+### PostgreSQL
 LuxeFinds uses **PostgreSQL** with **Prisma ORM** for:
 - Product catalog management
 - Order processing and history
@@ -106,3 +108,18 @@ LuxeFinds uses **PostgreSQL** with **Prisma ORM** for:
 - AI chat history
 
 The app gracefully falls back to hardcoded data if no database is configured. See [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for setup instructions.
+
+### Redis
+**Redis** is used for:
+- WebRTC signaling for voice calls (replaces in-memory solution)
+- Real-time message delivery via Pub/Sub
+- Server-Sent Events (SSE) for instant notifications
+- Automatic message expiration (10-minute TTL)
+
+**Benefits:**
+- ✅ Horizontal scalability (multiple Next.js instances)
+- ✅ Persistent signaling across server restarts
+- ✅ Real-time delivery (no polling delays)
+- ✅ Production-ready architecture
+
+See [`REDIS_SIGNALING.md`](./REDIS_SIGNALING.md) for detailed implementation and [`VOICE_CALL_QUICK_START.md`](./VOICE_CALL_QUICK_START.md#-redis-signaling-setup) for quick setup.

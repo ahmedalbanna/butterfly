@@ -33,6 +33,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const signalingPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
   const lastSignalingTimestampRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
@@ -124,28 +125,6 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     }
   }, [callId, role]);
 
-  // Poll for signaling messages
-  const pollSignalingMessages = useCallback(async () => {
-    try {
-      const url = new URL('/api/calls/signal', window.location.origin);
-      url.searchParams.set('callId', callId);
-      url.searchParams.set('recipient', role);
-      url.searchParams.set('since', lastSignalingTimestampRef.current.toString());
-
-      const response = await fetch(url.toString());
-      const data = await response.json();
-
-      if (data.success && data.messages) {
-        for (const message of data.messages) {
-          await handleSignalingMessage(message);
-        }
-        lastSignalingTimestampRef.current = data.timestamp;
-      }
-    } catch (error) {
-      console.error('[WebRTC] Failed to poll signaling messages:', error);
-    }
-  }, [callId, role]);
-
   // Handle incoming signaling messages
   const handleSignalingMessage = useCallback(async (message: any) => {
     const pc = peerConnectionRef.current;
@@ -184,6 +163,83 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       handleError('Failed to process signaling message');
     }
   }, [sendSignalingMessage, updateStatus, handleError]);
+
+  // Fallback polling mechanism (used if SSE fails)
+  const startPollingFallback = useCallback(() => {
+    if (signalingPollingRef.current) return; // Already polling
+
+    const pollSignalingMessages = async () => {
+      try {
+        const url = new URL('/api/calls/signal', window.location.origin);
+        url.searchParams.set('callId', callId);
+        url.searchParams.set('recipient', role);
+        url.searchParams.set('since', lastSignalingTimestampRef.current.toString());
+
+        const response = await fetch(url.toString());
+        const data = await response.json();
+
+        if (data.success && data.messages) {
+          for (const message of data.messages) {
+            await handleSignalingMessage(message);
+          }
+          lastSignalingTimestampRef.current = data.timestamp;
+        }
+      } catch (error) {
+        console.error('[WebRTC] Failed to poll signaling messages:', error);
+      }
+    };
+
+    signalingPollingRef.current = setInterval(pollSignalingMessages, 1000);
+  }, [callId, role, handleSignalingMessage]);
+
+  // Subscribe to real-time signaling via Server-Sent Events
+  const subscribeToSignaling = useCallback(() => {
+    try {
+      const url = new URL('/api/calls/signal/subscribe', window.location.origin);
+      url.searchParams.set('callId', callId);
+      url.searchParams.set('recipient', role);
+
+      const eventSource = new EventSource(url.toString());
+      eventSourceRef.current = eventSource;
+
+      eventSource.onopen = () => {
+        console.log('[WebRTC] SSE connection opened');
+      };
+
+      eventSource.onmessage = async (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          // Skip connection confirmation messages
+          if (message.type === 'connected') {
+            console.log('[WebRTC] SSE connected');
+            return;
+          }
+
+          // Handle signaling message
+          await handleSignalingMessage(message);
+        } catch (error) {
+          console.error('[WebRTC] Error processing SSE message:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('[WebRTC] SSE error:', error);
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        // Fallback to polling if SSE fails
+        console.log('[WebRTC] Falling back to polling');
+        startPollingFallback();
+      };
+
+      return eventSource;
+    } catch (error) {
+      console.error('[WebRTC] Failed to establish SSE connection:', error);
+      // Fallback to polling
+      startPollingFallback();
+    }
+  }, [callId, role, handleSignalingMessage, startPollingFallback]);
 
   // Start recording
   const startRecording = useCallback((stream: MediaStream) => {
@@ -320,16 +376,14 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
 
       updateStatus('ringing');
 
-      // Start polling for signaling messages
-      signalingPollingRef.current = setInterval(() => {
-        pollSignalingMessages();
-      }, 500); // Poll every 500ms during call setup
+      // Subscribe to real-time signaling via SSE
+      subscribeToSignaling();
 
     } catch (error) {
       console.error('[WebRTC] Failed to start call:', error);
       handleError('Failed to access microphone or start call');
     }
-  }, [initializePeerConnection, sendSignalingMessage, pollSignalingMessages, updateStatus, handleError, setupAudioAnalysis]);
+  }, [initializePeerConnection, sendSignalingMessage, subscribeToSignaling, updateStatus, handleError, setupAudioAnalysis]);
 
   // Answer the call (admin accepts)
   const answerCall = useCallback(async () => {
@@ -357,16 +411,14 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
         pc.addTrack(track, stream);
       });
 
-      // Start polling for signaling messages (will receive offer)
-      signalingPollingRef.current = setInterval(() => {
-        pollSignalingMessages();
-      }, 500);
+      // Subscribe to real-time signaling via SSE (will receive offer)
+      subscribeToSignaling();
 
     } catch (error) {
       console.error('[WebRTC] Failed to answer call:', error);
       handleError('Failed to access microphone');
     }
-  }, [initializePeerConnection, pollSignalingMessages, updateStatus, handleError, setupAudioAnalysis]);
+  }, [initializePeerConnection, subscribeToSignaling, updateStatus, handleError, setupAudioAnalysis]);
 
   // End the call
   const endCall = useCallback(() => {
@@ -389,7 +441,13 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       peerConnectionRef.current = null;
     }
 
-    // Stop polling
+    // Close SSE connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
+    // Stop polling (if fallback was active)
     if (signalingPollingRef.current) {
       clearInterval(signalingPollingRef.current);
       signalingPollingRef.current = null;
@@ -440,6 +498,10 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
   useEffect(() => {
     return () => {
       // Cleanup all resources
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+      
       if (signalingPollingRef.current) {
         clearInterval(signalingPollingRef.current);
       }
