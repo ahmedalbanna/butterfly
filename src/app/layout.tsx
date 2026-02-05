@@ -1,12 +1,13 @@
-
 import type {Metadata} from 'next';
 import './globals.css';
 import {CartProvider} from '@/context/cart-context';
 import {VoiceCallProvider} from '@/context/voice-call-context';
 import {ChatProvider} from '@/context/chat-context';
+import {SearchProvider} from '@/context/search-context';
 import {Toaster} from '@/components/ui/toaster';
 import {VoiceCallOverlay} from '@/components/voice-call-overlay';
 import {ChatOverlay} from '@/components/chat-overlay';
+import {SearchOverlay} from '@/components/search-overlay';
 import {FirebaseClientProvider} from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
@@ -28,16 +29,19 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
         <FirebaseClientProvider>
-          <ChatProvider>
-            <VoiceCallProvider>
-              <CartProvider>
-                {children}
-                <VoiceCallOverlay />
-                <ChatOverlay />
-                <Toaster />
-              </CartProvider>
-            </VoiceCallProvider>
-          </ChatProvider>
+          <SearchProvider>
+            <ChatProvider>
+              <VoiceCallProvider>
+                <CartProvider>
+                  {children}
+                  <VoiceCallOverlay />
+                  <ChatOverlay />
+                  <SearchOverlay />
+                  <Toaster />
+                </CartProvider>
+              </VoiceCallProvider>
+            </ChatProvider>
+          </SearchProvider>
         </FirebaseClientProvider>
       </body>
     </html>

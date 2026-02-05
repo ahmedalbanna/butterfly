@@ -29,7 +29,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     {
       id: 'welcome',
       role: 'admin',
-      content: "Welcome to LuxeFinds Live Support. Please describe how we can assist you today, and an admin will join shortly.",
+      content: "Welcome to the Butterfly Boutique. I am your lead concierge. Please describe how I may refine your experience today.",
       timestamp: new Date(),
     }
   ]);
@@ -45,7 +45,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize chat session
   const initializeChatSession = useCallback(async () => {
-    if (messageId) return messageId; // Already initialized
+    if (messageId) return messageId;
 
     try {
       setConnectionStatus('connecting');
@@ -55,23 +55,21 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: 'Guest Customer',
-          customerEmail: 'guest@luxefinds.com',
+          customerName: 'Boutique Client',
+          customerEmail: 'collector@luxefinds.com',
           type: 'chat',
         }),
       });
 
       const data = await response.json();
-      
       if (data.success && data.messageId) {
         setMessageId(data.messageId);
         setConnectionStatus('waiting');
         return data.messageId;
-      } else {
-        throw new Error('Failed to create chat session');
       }
+      throw new Error('Failed to create session');
     } catch (error) {
-      console.error('[Chat] Failed to initialize:', error);
+      console.error('[Chat] Init failed:', error);
       setConnectionStatus('disconnected');
       return null;
     }
@@ -83,9 +81,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       const url = new URL('/api/chat/poll', window.location.origin);
       url.searchParams.set('messageId', chatMessageId);
       url.searchParams.set('type', 'customer');
-      if (lastPollTimestampRef.current) {
-        url.searchParams.set('since', lastPollTimestampRef.current);
-      }
+      if (lastPollTimestampRef.current) url.searchParams.set('since', lastPollTimestampRef.current);
 
       const response = await fetch(url.toString());
       const data = await response.json();
@@ -109,6 +105,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           setMessages(prev => {
             const existingIds = new Set(prev.map(m => m.id));
             const filtered = newMessages.filter(m => !existingIds.has(m.id));
+            if (filtered.length === 0) return prev;
             return [...prev, ...filtered];
           });
 
@@ -120,7 +117,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         lastPollTimestampRef.current = data.timestamp;
       }
     } catch (error) {
-      console.error('[Chat] Polling error:', error);
+      console.error('[Chat] Poll error:', error);
     }
   }, [connectionStatus]);
 
@@ -130,11 +127,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       await fetch('/api/chat/poll', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId: chatMessageId,
-          type: 'customer',
-          connected: true,
-        }),
+        body: JSON.stringify({ messageId: chatMessageId, type: 'customer', connected: true }),
       });
     } catch (error) {
       console.error('[Chat] Heartbeat error:', error);
@@ -144,117 +137,74 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   // Start polling when chat is open
   useEffect(() => {
     if (isChatOpen && messageId) {
-      // Poll every 2 seconds
-      pollingIntervalRef.current = setInterval(() => {
-        pollMessages(messageId);
-      }, 2000);
-
-      // Send heartbeat every 10 seconds
-      heartbeatIntervalRef.current = setInterval(() => {
-        sendHeartbeat(messageId);
-      }, 10000);
-
-      // Initial poll
+      pollingIntervalRef.current = setInterval(() => pollMessages(messageId), 2000);
+      heartbeatIntervalRef.current = setInterval(() => sendHeartbeat(messageId), 10000);
       pollMessages(messageId);
       sendHeartbeat(messageId);
-
       return () => {
-        if (pollingIntervalRef.current) {
-          clearInterval(pollingIntervalRef.current);
-        }
-        if (heartbeatIntervalRef.current) {
-          clearInterval(heartbeatIntervalRef.current);
-        }
+        if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
+        if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
       };
     }
   }, [isChatOpen, messageId, pollMessages, sendHeartbeat]);
 
   const openChat = async () => {
     setIsChatOpen(true);
-    if (!messageId) {
-      await initializeChatSession();
-    }
+    if (!messageId) await initializeChatSession();
   };
 
   const closeChat = async () => {
     setIsChatOpen(false);
-    
-    // Send disconnect heartbeat
     if (messageId) {
-      try {
-        await fetch('/api/chat/poll', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messageId,
-            type: 'customer',
-            connected: false,
-          }),
-        });
-      } catch (error) {
-        console.error('[Chat] Disconnect error:', error);
-      }
+      fetch('/api/chat/poll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, type: 'customer', connected: false }),
+      });
     }
   };
 
   const sendMessage = async (content: string) => {
     if (!messageId) {
       const newMessageId = await initializeChatSession();
-      if (!newMessageId) {
-        console.error('[Chat] Cannot send message without session');
-        return;
-      }
+      if (!newMessageId) return;
     }
 
-    const userMessage: Message = {
-      id: `temp-${Date.now()}`,
-      role: 'customer',
-      content,
-      timestamp: new Date(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const tempId = `temp-${Date.now()}`;
+    setMessages(prev => [...prev, { id: tempId, role: 'customer', content, timestamp: new Date() }]);
     setIsTyping(true);
 
     try {
       const response = await fetch('/api/chat/ws', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messageId,
-          type: 'customer',
-          content,
-        }),
+        body: JSON.stringify({ messageId, type: 'customer', content }),
       });
-
       const data = await response.json();
-
       if (data.success) {
-        // Replace temp message with real one
-        setMessages(prev => 
-          prev.map(m => 
-            m.id === userMessage.id 
-              ? { ...m, id: data.reply.id }
-              : m
-          )
-        );
+        setMessages(prev => {
+          // If polling already added the real ID, just remove the temp message
+          if (prev.some(m => m.id === data.reply.id)) {
+            return prev.filter(m => m.id !== tempId);
+          }
+          // Otherwise, update the temp message with its real permanent ID
+          return prev.map(m => m.id === tempId ? { 
+            ...m, 
+            id: data.reply.id,
+            timestamp: new Date(data.reply.createdAt)
+          } : m);
+        });
       }
     } catch (error) {
       console.error('[Chat] Send error:', error);
       setIsTyping(false);
+      setMessages(prev => prev.filter(m => m.id !== tempId));
     }
   };
 
   return (
     <ChatContext.Provider value={{ 
-      messages, 
-      isChatOpen, 
-      isTyping, 
-      connectionStatus,
-      adminConnected,
-      openChat, 
-      closeChat, 
-      sendMessage 
+      messages, isChatOpen, isTyping, connectionStatus, adminConnected, openChat, closeChat, sendMessage 
     }}>
       {children}
     </ChatContext.Provider>

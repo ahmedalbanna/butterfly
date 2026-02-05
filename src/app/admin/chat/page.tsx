@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { getActiveChatSessions } from '@/app/actions/messages';
-import { MessageSquare, User, Send, Clock, Circle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { MessageSquare, User, Send, Clock, Circle, Sparkles, BookOpen, CheckCircle2 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface ChatSession {
@@ -33,12 +33,21 @@ interface ChatSession {
   };
 }
 
+const LUXURY_TEMPLATES = [
+  { label: 'Welcome', text: 'Welcome to LuxeFinds. I am your personal concierge today. How may I assist you with our collection?' },
+  { label: 'Checking', text: 'One moment while I consult our inventory for that specific piece...' },
+  { label: 'Stylist Note', text: 'Based on your preferences, our lead stylist recommends pairing this with our Rose Gold collection.' },
+  { label: 'Order Update', text: 'I have checked your acquisition status. Your piece is currently being meticulously prepared for shipment.' },
+  { label: 'Closing', text: 'It was a pleasure assisting you. Do you require any further guidance with our boutique collection?' }
+];
+
 export default function AdminChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<ChatSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,17 +58,20 @@ export default function AdminChatPage() {
   const loadSessions = async () => {
     const result = await getActiveChatSessions();
     if (result.success && result.sessions) {
-      setSessions(result.sessions as ChatSession[]);
-      
-      // If we have a selected session, update it
-      if (selectedSession) {
-        const updated = result.sessions.find(
-          (s: any) => s.messageId === selectedSession.messageId
-        );
-        if (updated) {
-          setSelectedSession(updated as ChatSession);
-        }
-      }
+      setSessions(prevSessions => {
+        return (result.sessions as any[]).map(s => {
+          const existing = prevSessions.find(p => p.messageId === s.messageId);
+          return {
+            ...s,
+            // Preserve replies if we already have them in state, 
+            // as getActiveChatSessions doesn't include them
+            message: {
+              ...s.message,
+              replies: existing?.message.replies || []
+            }
+          };
+        });
+      });
     }
     setIsLoading(false);
   };
@@ -67,7 +79,6 @@ export default function AdminChatPage() {
   // Poll for new messages in the selected chat
   const pollSelectedChat = async () => {
     if (!selectedSession) return;
-
     try {
       const url = new URL('/api/chat/poll', window.location.origin);
       url.searchParams.set('messageId', selectedSession.messageId);
@@ -79,28 +90,41 @@ export default function AdminChatPage() {
       const response = await fetch(url.toString());
       const data = await response.json();
 
-      if (data.success && data.replies && data.replies.length > 0) {
-        setSelectedSession(prev => {
-          if (!prev) return prev;
-          
-          const existingIds = new Set(prev.message.replies.map(r => r.id));
-          const newReplies = data.replies.filter((r: any) => !existingIds.has(r.id));
-          
-          if (newReplies.length > 0) {
+      if (data.success) {
+        if (data.replies && data.replies.length > 0) {
+          setSelectedSession(prev => {
+            if (!prev || prev.messageId !== selectedSession.messageId) return prev;
+            
+            const existingIds = new Set(prev.message.replies.map(r => r.id));
+            const newReplies = data.replies.filter((r: any) => !existingIds.has(r.id));
+            
+            if (newReplies.length > 0) {
+              return {
+                ...prev,
+                customerConnected: data.otherPartyConnected || false,
+                message: { 
+                  ...prev.message, 
+                  replies: [...prev.message.replies, ...newReplies.map((r: any) => ({
+                    ...r,
+                    createdAt: new Date(r.createdAt)
+                  }))] 
+                },
+              };
+            }
+            
             return {
               ...prev,
-              message: {
-                ...prev.message,
-                replies: [...prev.message.replies, ...newReplies],
-              },
-              customerConnected: data.otherPartyConnected || false,
+              customerConnected: data.otherPartyConnected || false
             };
-          }
-          return prev;
-        });
+          });
+        } else {
+          setSelectedSession(prev => {
+            if (!prev || prev.messageId !== selectedSession.messageId) return prev;
+            return { ...prev, customerConnected: data.otherPartyConnected || false };
+          });
+        }
+        lastPollTimestampRef.current = data.timestamp;
       }
-
-      lastPollTimestampRef.current = data.timestamp;
     } catch (error) {
       console.error('[Admin Chat Poll] Error:', error);
     }
@@ -145,6 +169,7 @@ export default function AdminChatPage() {
   useEffect(() => {
     if (selectedSession) {
       // Poll every 2 seconds
+      lastPollTimestampRef.current = null; // Reset for new session
       chatPollingIntervalRef.current = setInterval(() => {
         pollSelectedChat();
       }, 2000);
@@ -180,17 +205,14 @@ export default function AdminChatPage() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [selectedSession?.message.replies]);
+    if (scrollRef.current) scrollRef.current.scrollIntoView({ behavior: 'smooth' });
+  }, [selectedSession?.message.replies.length]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!replyContent.trim() || !selectedSession) return;
+  const handleSendMessage = async (contentOverride?: string) => {
+    const finalContent = contentOverride || replyContent;
+    if (!finalContent.trim() || !selectedSession) return;
 
     setIsSubmitting(true);
-
     try {
       const response = await fetch('/api/chat/ws', {
         method: 'POST',
@@ -198,18 +220,20 @@ export default function AdminChatPage() {
         body: JSON.stringify({
           messageId: selectedSession.messageId,
           type: 'admin',
-          content: replyContent,
+          content: finalContent,
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         setReplyContent('');
-        
+        setShowTemplates(false);
         // Add message to UI immediately
         setSelectedSession(prev => {
-          if (!prev) return prev;
+          if (!prev || prev.messageId !== selectedSession.messageId) return prev;
+          
+          // Deduplicate: If polling already added this message, don't add it again
+          if (prev.message.replies.some(r => r.id === data.reply.id)) return prev;
+
           return {
             ...prev,
             message: {
@@ -231,202 +255,105 @@ export default function AdminChatPage() {
     setIsSubmitting(false);
   };
 
+  const useTemplate = (text: string) => {
+    handleSendMessage(text);
+  };
   const activeSessions = sessions.filter(s => s.customerConnected);
   const inactiveSessions = sessions.filter(s => !s.customerConnected);
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-6">
+    <div className="h-[calc(100vh-8rem)] flex flex-col gap-6 p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-serif text-primary mb-2">Live Chat</h1>
-        <p className="text-neutral-400">Manage real-time customer conversations</p>
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-headline italic text-white mb-2">Concierge Live</h1>
+          <p className="text-sm text-white/40 uppercase tracking-widest">Real-time luxury customer support</p>
+        </div>
+        <div className="flex gap-4">
+          <Badge className="bg-green-500/10 text-green-400 border-green-500/20 px-4 py-2">
+            <Circle className="w-2 h-2 fill-current animate-pulse mr-2" />
+            {sessions.filter(s => s.customerConnected).length} Online
+          </Badge>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-neutral-900/50 border-green-500/20">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Active Chats</CardDescription>
-            <CardTitle className="text-3xl text-green-400">{activeSessions.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-neutral-900/50 border-neutral-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Waiting</CardDescription>
-            <CardTitle className="text-3xl text-neutral-200">{inactiveSessions.length}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card className="bg-neutral-900/50 border-neutral-700">
-          <CardHeader className="pb-3">
-            <CardDescription className="text-neutral-400">Total Sessions</CardDescription>
-            <CardTitle className="text-3xl text-neutral-200">{sessions.length}</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      {/* Chat Interface */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-        {/* Session List */}
-        <Card className="bg-neutral-900/50 border-neutral-700 flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-primary" />
-              Chat Sessions
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
+        <Card className="bg-black/40 border-white/10 flex flex-col">
+          <CardHeader className="border-b border-white/5">
+            <CardTitle className="text-lg font-headline italic text-primary flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Active Clients
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex-1 min-h-0">
-            <ScrollArea className="h-full pr-4">
-              {isLoading ? (
-                <div className="text-center py-8 text-neutral-400">Loading chats...</div>
-              ) : sessions.length === 0 ? (
-                <div className="text-center py-8 text-neutral-400">
-                  <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-20" />
-                  <p>No active chat sessions</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {activeSessions.map((session) => (
-                    <div
-                      key={session.id}
-                      onClick={() => setSelectedSession(session)}
-                      className={cn(
-                        "p-3 rounded-lg border cursor-pointer transition-colors",
-                        selectedSession?.id === session.id
-                          ? "bg-primary/10 border-primary"
-                          : "bg-neutral-800/50 border-neutral-700 hover:border-primary/50"
-                      )}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Circle className="h-2 w-2 fill-green-400 text-green-400 animate-pulse" />
-                          <span className="font-medium text-neutral-100 text-sm">
-                            {session.message.customerName}
-                          </span>
-                        </div>
-                        <span className="text-xs text-neutral-500">
-                          {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-xs text-neutral-400 truncate">
-                        {session.message.customerEmail}
-                      </p>
-                      {session.message.replies.length > 0 && (
-                        <p className="text-xs text-neutral-500 mt-1 truncate">
-                          {session.message.replies[session.message.replies.length - 1].content}
-                        </p>
-                      )}
+          <CardContent className="flex-1 min-h-0 p-0">
+            <ScrollArea className="h-full">
+              <div className="divide-y divide-white/5">
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    onClick={() => setSelectedSession(session)}
+                    className={cn(
+                      "p-4 cursor-pointer transition-all hover:bg-white/5",
+                      selectedSession?.id === session.id ? "bg-primary/10 border-l-2 border-primary" : ""
+                    )}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-sm font-bold text-white">{session.message.customerName}</p>
+                      <span className="text-[10px] text-white/30">{formatDistanceToNow(new Date(session.lastActivity), { addSuffix: false })}</span>
                     </div>
-                  ))}
-                  
-                  {inactiveSessions.length > 0 && (
-                    <>
-                      <div className="pt-4 pb-2">
-                        <p className="text-xs text-neutral-500 uppercase tracking-wider">Waiting</p>
-                      </div>
-                      {inactiveSessions.map((session) => (
-                        <div
-                          key={session.id}
-                          onClick={() => setSelectedSession(session)}
-                          className={cn(
-                            "p-3 rounded-lg border cursor-pointer transition-colors opacity-60",
-                            selectedSession?.id === session.id
-                              ? "bg-primary/10 border-primary"
-                              : "bg-neutral-800/50 border-neutral-700 hover:border-primary/50"
-                          )}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Circle className="h-2 w-2 fill-neutral-500 text-neutral-500" />
-                              <span className="font-medium text-neutral-100 text-sm">
-                                {session.message.customerName}
-                              </span>
-                            </div>
-                            <span className="text-xs text-neutral-500">
-                              {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
-                            </span>
-                          </div>
-                          <p className="text-xs text-neutral-400 truncate">
-                            {session.message.customerEmail}
-                          </p>
-                        </div>
-                      ))}
-                    </>
-                  )}
-                </div>
-              )}
+                    <div className="flex items-center gap-2">
+                      <div className={cn("w-1.5 h-1.5 rounded-full", session.customerConnected ? "bg-green-500 animate-pulse" : "bg-white/10")} />
+                      <p className="text-[10px] text-white/40 uppercase tracking-tighter truncate">{session.message.customerEmail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </ScrollArea>
           </CardContent>
         </Card>
 
-        {/* Chat Window */}
-        <Card className="lg:col-span-2 bg-neutral-900/50 border-neutral-700 flex flex-col">
+        <Card className="lg:col-span-3 bg-black/40 border-white/10 flex flex-col relative overflow-hidden">
           {selectedSession ? (
             <>
-              {/* Chat Header */}
-              <CardHeader className="border-b border-neutral-700">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-primary" />
-                      {selectedSession.message.customerName}
-                    </CardTitle>
-                    <CardDescription className="mt-1">
-                      {selectedSession.message.customerEmail}
-                    </CardDescription>
+              <header className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                    <User className="text-primary w-5 h-5" />
                   </div>
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      selectedSession.customerConnected
-                        ? "bg-green-500/10 text-green-400 border-green-500/20"
-                        : "bg-red-500/10 text-red-400 border-red-500/20"
-                    )}
-                  >
-                    {selectedSession.customerConnected ? 'Online' : 'Offline'}
+                  <div>
+                    <h3 className="font-headline text-xl text-white">{selectedSession.message.customerName}</h3>
+                    <p className="text-xs text-white/40 uppercase tracking-widest">{selectedSession.message.customerEmail}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={cn(
+                    "rounded-none text-[8px] tracking-[0.2em] uppercase",
+                    selectedSession.customerConnected ? "border-green-500/50 text-green-400" : "border-white/10 text-white/20"
+                  )}>
+                    {selectedSession.customerConnected ? 'Live Connection' : 'Client Offline'}
                   </Badge>
                 </div>
-              </CardHeader>
+              </header>
 
-              {/* Messages */}
               <CardContent className="flex-1 min-h-0 p-6">
                 <ScrollArea className="h-full pr-4">
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {selectedSession.message.replies.map((reply) => (
-                      <div
-                        key={reply.id}
-                        className={cn(
-                          "flex gap-3",
-                          reply.sender === 'admin' ? "flex-row-reverse" : "flex-row"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
-                            reply.sender === 'admin'
-                              ? "bg-primary/20 text-primary"
-                              : "bg-neutral-700 text-neutral-300"
-                          )}
-                        >
+                      <div key={reply.id} className={cn("flex gap-4", reply.sender === 'admin' ? "flex-row-reverse" : "flex-row")}>
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border",
+                          reply.sender === 'admin' ? "bg-primary/20 border-primary/30 text-primary" : "bg-white/5 border-white/10 text-white/40"
+                        )}>
                           {reply.sender === 'admin' ? 'A' : 'C'}
                         </div>
-                        <div
-                          className={cn(
-                            "flex-1 max-w-[70%]",
-                            reply.sender === 'admin' ? "text-right" : "text-left"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "inline-block p-3 rounded-lg",
-                              reply.sender === 'admin'
-                                ? "bg-primary/10 text-neutral-100"
-                                : "bg-neutral-800 text-neutral-200"
-                            )}
-                          >
-                            <p className="text-sm whitespace-pre-wrap">{reply.content}</p>
+                        <div className={cn("max-w-[70%]", reply.sender === 'admin' ? "text-right" : "text-left")}>
+                          <div className={cn(
+                            "inline-block px-4 py-3 rounded-lg shadow-xl",
+                            reply.sender === 'admin' ? "bg-primary/10 text-white border border-primary/20" : "bg-white/5 text-white/80 border border-white/10"
+                          )}>
+                            <p className="text-sm leading-relaxed">{reply.content}</p>
                           </div>
-                          <p className="text-xs text-neutral-500 mt-1">
-                            {formatDistanceToNow(new Date(reply.createdAt), { addSuffix: true })}
+                          <p className="text-[9px] text-white/20 mt-2 uppercase tracking-widest">
+                            {format(new Date(reply.createdAt), 'hh:mm a')}
                           </p>
                         </div>
                       </div>
@@ -436,41 +363,64 @@ export default function AdminChatPage() {
                 </ScrollArea>
               </CardContent>
 
-              {/* Reply Input */}
-              <div className="p-4 border-t border-neutral-700">
-                <form onSubmit={handleSendMessage} className="flex gap-2">
-                  <Textarea
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Type your message..."
-                    className="bg-neutral-800 border-neutral-700 text-neutral-100 resize-none"
-                    rows={2}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e);
-                      }
-                    }}
-                  />
+              <div className="p-6 border-t border-white/5 bg-black/40">
+                {showTemplates && (
+                  <div className="absolute bottom-32 left-6 right-6 p-4 bg-neutral-900 border border-white/10 rounded-xl shadow-2xl animate-in slide-in-from-bottom-2">
+                    <div className="flex items-center gap-2 mb-3 text-xs text-primary font-bold uppercase tracking-widest">
+                      <Sparkles className="w-3 h-3" /> Luxury Templates
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {LUXURY_TEMPLATES.map((tmpl) => (
+                        <button
+                          key={tmpl.label}
+                          onClick={() => useTemplate(tmpl.text)}
+                          className="text-left p-3 rounded bg-white/5 hover:bg-primary/10 hover:text-primary transition-all border border-white/5 text-[10px] leading-snug group"
+                        >
+                          <span className="font-bold block mb-1 uppercase tracking-tighter text-white group-hover:text-primary">{tmpl.label}</span>
+                          <span className="text-white/40 line-clamp-1">{tmpl.text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-4">
                   <Button
-                    type="submit"
-                    disabled={isSubmitting || !replyContent.trim()}
-                    className="bg-primary hover:bg-primary/90 shrink-0"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowTemplates(!showTemplates)}
+                    className={cn("h-12 w-12 border-white/10 text-white/40 hover:text-primary", showTemplates && "text-primary border-primary")}
                   >
-                    <Send className="h-4 w-4" />
+                    <BookOpen className="w-5 h-5" />
                   </Button>
-                </form>
-                <p className="text-xs text-neutral-500 mt-2">
-                  Press Enter to send, Shift+Enter for new line
-                </p>
+                  <div className="relative flex-1">
+                    <Textarea
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      placeholder="Enter your concierge response..."
+                      className="bg-white/5 border-white/10 text-white rounded-none resize-none h-12 min-h-0 focus:border-primary/50 transition-colors"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => handleSendMessage()}
+                    disabled={isSubmitting || !replyContent.trim()}
+                    className="h-12 px-8 bg-primary hover:bg-white hover:text-primary text-white rounded-none uppercase tracking-[0.2em] font-bold transition-all"
+                  >
+                    {isSubmitting ? <CheckCircle2 className="w-5 h-5 animate-pulse" /> : <Send className="w-5 h-5" />}
+                  </Button>
+                </div>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-neutral-500">
-              <div className="text-center">
-                <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                <p>Select a chat session to start</p>
-              </div>
+            <div className="flex-1 flex flex-col items-center justify-center text-white/20 space-y-4">
+              <Sparkles className="w-16 h-16 opacity-10" />
+              <p className="font-headline italic text-xl">Select an active client to begin concierge guidance</p>
             </div>
           )}
         </Card>

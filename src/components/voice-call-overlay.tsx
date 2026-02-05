@@ -2,7 +2,7 @@
 
 import { useVoiceCall } from '@/context/voice-call-context';
 import { Button } from '@/components/ui/button';
-import { Phone, Volume2, VolumeX, Minimize2, X, Radio, Mic, MicOff } from 'lucide-react';
+import { Phone, Volume2, VolumeX, Minimize2, X, Radio, Mic, MicOff, Activity } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,8 @@ export function VoiceCallOverlay() {
     isMuted, 
     callDuration,
     remoteStream,
+    localAudioLevel,
+    remoteAudioLevel,
     setIsMinimized,
     endCall,
     toggleMute,
@@ -24,19 +26,14 @@ export function VoiceCallOverlay() {
   // Play remote audio stream
   useEffect(() => {
     if (remoteStream && audioRef.current) {
-      console.log('[Voice Overlay] Setting remote stream to audio element');
       audioRef.current.srcObject = remoteStream;
-      
       const playAudio = async () => {
         try {
           await audioRef.current?.play();
-          console.log('[Voice Overlay] Remote audio playing');
         } catch (error) {
-          console.error('[Voice Overlay] Failed to play audio:', error);
           setTimeout(playAudio, 1000);
         }
       };
-      
       playAudio();
     }
     
@@ -56,18 +53,12 @@ export function VoiceCallOverlay() {
 
   const getStatusText = () => {
     switch (callStatus) {
-      case 'connecting':
-        return 'Connecting...';
-      case 'ringing':
-        return 'Calling Admin...';
-      case 'connected':
-        return formatDuration(callDuration);
-      case 'ended':
-        return 'Call Ended';
-      case 'error':
-        return 'Connection Failed';
-      default:
-        return 'Initializing...';
+      case 'connecting': return 'Authenticating...';
+      case 'ringing': return 'Concierge Alert Sent...';
+      case 'connected': return 'Direct Voice Connection';
+      case 'ended': return 'Session Concluded';
+      case 'error': return 'Handshake Failed';
+      default: return 'Initializing Concierge...';
     }
   };
 
@@ -80,24 +71,25 @@ export function VoiceCallOverlay() {
         <div className="relative group">
           {/* Pulse Animation for Active Call */}
           {callStatus === 'connected' && (
-            <>
-              <div className="absolute inset-0 rounded-full bg-green-400/30 animate-ping" />
-              <div className="absolute inset-0 rounded-full bg-green-400/20 animate-pulse" />
-            </>
+            <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping" />
           )}
           
           {/* Main Bubble */}
           <button 
             onClick={() => setIsMinimized(false)}
             className={cn(
-              "relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.6)] hover:scale-110 transition-all duration-300 border-2",
+              "relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500 border-2",
               callStatus === 'connected' 
-                ? "bg-gradient-to-br from-green-500/30 to-green-600/20 border-green-400/50" 
-                : "bg-gradient-to-br from-primary/30 to-primary/20 border-primary/50"
+                ? "bg-black border-green-400/50" 
+                : "bg-black border-primary/50"
             )}
           >
+            <div 
+              className="absolute inset-0 rounded-full opacity-20 bg-primary transition-all duration-300"
+              style={{ transform: `scale(${1 + (localAudioLevel / 100)})` }}
+            />
             <Phone className={cn(
-              "w-7 h-7 md:w-8 md:h-8",
+              "w-7 h-7 md:w-8 md:h-8 relative z-10",
               callStatus === 'connected' ? "text-green-400" : "text-primary"
             )} />
             
@@ -111,11 +103,8 @@ export function VoiceCallOverlay() {
           
           {/* Close Button */}
           <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              endCall();
-            }}
-            className="absolute -top-1 -right-1 w-7 h-7 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg hover:scale-110 border border-red-400/50"
+            onClick={(e) => { e.stopPropagation(); endCall(); }}
+            className="absolute -top-1 -right-1 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg border border-red-400/50"
           >
             <X className="w-4 h-4" />
           </button>
@@ -136,132 +125,86 @@ export function VoiceCallOverlay() {
 
   // Full screen view
   return (
-    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-black via-black to-primary/5 backdrop-blur-2xl flex items-center justify-center animate-in fade-in duration-500">
-      {/* Decorative Background */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] animate-pulse delay-1000" />
-      </div>
-
-      {/* Minimize button */}
+    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex items-center justify-center animate-in fade-in duration-700">
       <button 
         onClick={() => setIsMinimized(true)}
-        className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center group"
+        className="absolute top-8 right-8 w-14 h-14 rounded-full bg-white/5 border border-white/10 text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"
       >
-        <Minimize2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+        <Minimize2 className="w-6 h-6" />
       </button>
 
-      <div className="relative flex flex-col items-center">
-        {/* Call Status Circle */}
-        <div className="relative mb-12">
-          {/* Animated Rings */}
-          {callStatus === 'connected' && (
-            <>
-              <div className="absolute inset-0 rounded-full bg-green-400/20 animate-ping" style={{ animationDuration: '2s' }} />
-              <div className="absolute inset-0 rounded-full bg-green-400/10 animate-ping" style={{ animationDuration: '3s', animationDelay: '1s' }} />
-            </>
-          )}
-          {(callStatus === 'ringing' || callStatus === 'connecting') && (
-            <>
-              <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: '2s' }} />
-              <div className="absolute inset-0 rounded-full bg-primary/10 animate-ping" style={{ animationDuration: '3s', animationDelay: '1s' }} />
-            </>
-          )}
-
+      <div className="relative flex flex-col items-center max-w-lg w-full px-6">
+        {/* Audio Visualizer Circle */}
+        <div className="relative mb-16">
+          <div 
+            className="absolute inset-0 rounded-full bg-primary/10 blur-xl transition-all duration-100"
+            style={{ transform: `scale(${1 + (remoteAudioLevel / 50)})`, opacity: remoteAudioLevel / 100 }}
+          />
+          <div 
+            className="absolute inset-0 rounded-full border-2 border-primary/20 transition-all duration-75"
+            style={{ transform: `scale(${1 + (localAudioLevel / 100)})` }}
+          />
           {/* Main Circle */}
           <div className={cn(
-            "relative w-40 h-40 md:w-56 md:h-56 rounded-full border-4 flex items-center justify-center transition-all duration-500 shadow-[0_0_60px_rgba(0,0,0,0.4)]",
-            callStatus === 'connected' 
-              ? "bg-gradient-to-br from-green-500/20 to-green-600/10 border-green-400/50" 
-              : callStatus === 'error'
-              ? "bg-gradient-to-br from-red-500/20 to-red-600/10 border-red-400/50"
-              : "bg-gradient-to-br from-primary/20 to-primary/10 border-primary/50"
+            "relative w-48 h-48 md:w-64 md:h-64 rounded-full border-2 flex items-center justify-center transition-all duration-1000 shadow-2xl",
+            callStatus === 'connected' ? "bg-green-500/5 border-green-400/30" : "bg-primary/5 border-primary/30"
           )}>
             {callStatus === 'connected' ? (
-              <div className="relative">
-                <Radio className="w-20 h-20 md:w-28 md:h-28 text-green-400 animate-pulse" />
-                {isMuted && (
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center border-2 border-white/20">
-                    <MicOff className="w-5 h-5 text-white" />
-                  </div>
-                )}
+              <div className="flex flex-col items-center">
+                <Radio className="w-20 h-20 md:w-24 md:h-24 text-green-400/80 animate-pulse" />
+                <span className="mt-4 font-mono text-xl text-green-400">{formatDuration(callDuration)}</span>
               </div>
             ) : (
-              <Phone className={cn(
-                "w-16 h-16 md:w-24 md:h-24",
-                callStatus === 'error' ? "text-red-400" : "text-primary animate-pulse"
-              )} />
+              <Activity className="w-20 h-20 md:w-24 md:h-24 text-primary/40 animate-pulse" />
             )}
           </div>
         </div>
-        
         {/* Call Info */}
-        <div className="text-center space-y-4 mb-16 px-6 max-w-md">
-          <h3 className="text-3xl md:text-5xl font-headline italic text-white tracking-wide">
-            Luxury Concierge
-          </h3>
+        
+        <div className="text-center space-y-4 mb-20">
+          <h3 className="text-4xl md:text-6xl font-headline italic text-white tracking-tight">Concierge Voice</h3>
           <p className={cn(
-            "text-lg md:text-xl font-bold uppercase tracking-[0.3em]",
-            callStatus === 'connected' ? "text-green-400" : 
-            callStatus === 'error' ? "text-red-400" : "text-primary"
+            "text-xs md:text-sm font-bold uppercase tracking-[0.5em]",
+            callStatus === 'connected' ? "text-green-400" : "text-primary"
           )}>
             {getStatusText()}
           </p>
           {callStatus === 'connected' && (
-            <p className="text-sm text-white/60 uppercase tracking-wider">
-              Live Voice Call
-            </p>
-          )}
-          {callStatus === 'error' && (
-            <p className="text-red-400 text-sm max-w-xs mx-auto">
-              Please check your microphone permissions and try again
-            </p>
+            <div className="flex items-center justify-center gap-2 text-[10px] text-white/30 uppercase tracking-[0.3em] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> HD Audio Active
+            </div>
           )}
         </div>
-
-        {/* Call Controls */}
-        <div className="flex items-center gap-6 md:gap-8">
-          {/* Mute Button */}
+{/* Call Controls */}
+        <div className="flex items-center gap-8 md:gap-12">
           <button 
             onClick={toggleMute}
             disabled={callStatus !== 'connected'}
             className={cn(
-              "w-16 h-16 md:w-20 md:h-20 rounded-full border-2 transition-all flex items-center justify-center group disabled:opacity-40 disabled:cursor-not-allowed",
-              isMuted 
-                ? "bg-gradient-to-br from-red-500/30 to-red-600/20 border-red-400/50 hover:from-red-500/40 hover:to-red-600/30" 
-                : "bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30"
+              "w-16 h-16 md:w-20 md:h-20 rounded-full border-2 transition-all flex items-center justify-center disabled:opacity-20",
+              isMuted ? "bg-red-500/20 border-red-400/50 text-red-400" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
             )}
           >
-            {isMuted ? (
-              <MicOff className="w-7 h-7 md:w-9 md:h-9 text-red-400 group-hover:scale-110 transition-transform" />
-            ) : (
-              <Mic className="w-7 h-7 md:w-9 md:h-9 text-white group-hover:scale-110 transition-transform" />
-            )}
+            {isMuted ? <MicOff className="w-7 h-7 md:w-8 md:h-8" /> : <Mic className="w-7 h-7 md:w-8 md:h-8" />}
           </button>
-          
           {/* End Call Button */}
           <button 
             onClick={endCall}
-            className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-[0_0_40px_rgba(239,68,68,0.4)] transition-all hover:scale-105 flex items-center justify-center border-2 border-red-400/50 group"
+            className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-red-600 hover:bg-red-700 shadow-2xl transition-all hover:scale-105 flex items-center justify-center border-2 border-red-400/50 group"
           >
-            <Phone className="w-10 h-10 md:w-14 md:h-14 text-white rotate-[135deg] group-hover:scale-110 transition-transform" />
+            <Phone className="w-10 h-10 md:w-14 md:h-14 text-white rotate-[135deg]" />
           </button>
-
-          {/* Volume Button */}
-          <button 
-            className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 bg-white/5 border-white/20 hover:bg-white/10 hover:border-white/30 transition-all flex items-center justify-center group"
-          >
-            <Volume2 className="w-7 h-7 md:w-9 md:h-9 text-white group-hover:scale-110 transition-transform" />
-          </button>
+{/* Volume Button */}
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 bg-white/5 border-white/10 text-white/60 flex items-center justify-center">
+            <Volume2 className="w-7 h-7 md:w-8 md:h-8" />
+          </div>
         </div>
-
-        {/* Footer Note */}
-        <p className="absolute bottom-8 text-white/20 uppercase tracking-[0.5em] text-[9px] font-bold">
-          WebRTC • Encrypted • HD Audio
+{/* Footer Note */}
+        <p className="absolute bottom-12 text-white/10 uppercase tracking-[0.6em] text-[8px] font-bold">
+          Butterfly Protocol • Encrypted Acquisition Channel
         </p>
       </div>
-
-      {/* Remote audio element */}
+{/* Remote audio element */}
       <audio ref={audioRef} autoPlay playsInline controls={false} className="hidden" />
     </div>
   );

@@ -45,3 +45,4 @@ firebase-debug.log
 firestore-debug.log
 /src/generated/prisma
 public/products/*
+acli

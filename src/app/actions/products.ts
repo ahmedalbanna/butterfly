@@ -51,6 +51,29 @@ export async function getProductsByCategory(categoryIdOrName: string): Promise<P
 }
 
 /**
+ * Get products by category slug
+ */
+export async function getProductsByCategorySlug(slug: string): Promise<Product[]> {
+  try {
+    const products = await prisma.product.findMany({
+      where: {
+        category: {
+          slug: slug
+        }
+      },
+      orderBy: [
+        { featured: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    });
+    return products;
+  } catch (error) {
+    console.error('Error fetching products by category slug:', error);
+    return [];
+  }
+}
+
+/**
  * Get a single product by ID
  */
 export async function getProductById(id: string): Promise<Product | null> {
@@ -82,16 +105,19 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 }
 
 /**
- * Search products by name or description
+ * Search products by name, description, materials, or category name
  */
 export async function searchProducts(query: string): Promise<Product[]> {
   try {
+    if (!query.trim()) return [];
+
     const products = await prisma.product.findMany({
       where: {
         OR: [
           { name: { contains: query, mode: 'insensitive' } },
           { description: { contains: query, mode: 'insensitive' } },
-          { category: { contains: query, mode: 'insensitive' } }
+          { materials: { contains: query, mode: 'insensitive' } },
+          { category: { name: { contains: query, mode: 'insensitive' } } }
         ]
       },
       orderBy: [

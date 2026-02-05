@@ -28,12 +28,20 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [localAudioLevel, setLocalVolume] = useState(0);
+  const [remoteAudioLevel, setRemoteVolume] = useState(0);
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const signalingPollingRef = useRef<NodeJS.Timeout | null>(null);
   const lastSignalingTimestampRef = useRef<number>(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  
+  // Audio Analysis Refs
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const localAnalyzerRef = useRef<AnalyserNode | null>(null);
+  const remoteAnalyzerRef = useRef<AnalyserNode | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Update status and notify
   const updateStatus = useCallback((newStatus: CallStatus) => {
@@ -47,6 +55,51 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     updateStatus('error');
     onError?.(error);
   }, [updateStatus, onError]);
+
+  // Audio Level Detection
+  const setupAudioAnalysis = useCallback((stream: MediaStream, type: 'local' | 'remote') => {
+    if (!stream) return;
+    
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      
+      const ctx = audioContextRef.current;
+      const analyzer = ctx.createAnalyser();
+      analyzer.fftSize = 256;
+      
+      const source = ctx.createMediaStreamSource(stream);
+      source.connect(analyzer);
+      
+      if (type === 'local') {
+        localAnalyzerRef.current = analyzer;
+      } else {
+        remoteAnalyzerRef.current = analyzer;
+      }
+
+      const checkVolume = () => {
+        const dataArray = new Uint8Array(analyzer.frequencyBinCount);
+        analyzer.getByteFrequencyData(dataArray);
+        
+        let values = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          values += dataArray[i];
+        }
+        const average = values / dataArray.length;
+        const level = Math.min(100, Math.round((average / 128) * 100));
+        
+        if (type === 'local') setLocalVolume(level);
+        else setRemoteVolume(level);
+        
+        animationFrameRef.current = requestAnimationFrame(checkVolume);
+      };
+      
+      checkVolume();
+    } catch (err) {
+      console.warn('[WebRTC] Audio analysis failed:', err);
+    }
+  }, []);
 
   // Send signaling message
   const sendSignalingMessage = useCallback(async (type: string, data: any) => {
@@ -197,6 +250,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       console.log('[WebRTC] Received remote stream');
       const remoteMediaStream = event.streams[0];
       setRemoteStream(remoteMediaStream);
+      setupAudioAnalysis(remoteMediaStream, 'remote');
     };
 
     // Handle connection state changes
@@ -218,7 +272,6 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
           // Add remote stream
           const remoteSource = audioContext.createMediaStreamSource(remoteStream);
           remoteSource.connect(destination);
-          
           startRecording(destination.stream);
         }
       } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
@@ -227,7 +280,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     };
 
     return pc;
-  }, [sendSignalingMessage, updateStatus, handleError, startRecording, localStream, remoteStream]);
+  }, [sendSignalingMessage, updateStatus, handleError, startRecording, localStream, remoteStream, setupAudioAnalysis]);
 
   // Start the call (customer initiates)
   const startCall = useCallback(async () => {
@@ -245,6 +298,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       });
 
       setLocalStream(stream);
+      setupAudioAnalysis(stream, 'local');
 
       // Initialize peer connection
       const pc = initializePeerConnection();
@@ -270,7 +324,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       console.error('[WebRTC] Failed to start call:', error);
       handleError('Failed to access microphone or start call');
     }
-  }, [initializePeerConnection, sendSignalingMessage, pollSignalingMessages, updateStatus, handleError]);
+  }, [initializePeerConnection, sendSignalingMessage, pollSignalingMessages, updateStatus, handleError, setupAudioAnalysis]);
 
   // Answer the call (admin accepts)
   const answerCall = useCallback(async () => {
@@ -288,6 +342,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       });
 
       setLocalStream(stream);
+      setupAudioAnalysis(stream, 'local');
 
       // Initialize peer connection
       const pc = initializePeerConnection();
@@ -306,7 +361,7 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       console.error('[WebRTC] Failed to answer call:', error);
       handleError('Failed to access microphone');
     }
-  }, [initializePeerConnection, pollSignalingMessages, updateStatus, handleError]);
+  }, [initializePeerConnection, pollSignalingMessages, updateStatus, handleError, setupAudioAnalysis]);
 
   // End the call
   const endCall = useCallback(() => {
@@ -335,8 +390,14 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       signalingPollingRef.current = null;
     }
 
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
     setLocalStream(null);
     setRemoteStream(null);
+    setLocalVolume(0);
+    setRemoteVolume(0);
     updateStatus('ended');
 
     // Cleanup signaling messages
@@ -369,6 +430,8 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     remoteStream,
     isMuted,
     isRecording,
+    localAudioLevel,
+    remoteAudioLevel,
     startCall,
     answerCall,
     endCall,

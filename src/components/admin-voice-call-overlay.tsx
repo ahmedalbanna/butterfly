@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Minimize2, Maximize2, Radio } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Minimize2, Maximize2, Radio, Activity, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useWebRTCCall, CallStatus } from '@/hooks/use-webrtc-call';
 import { VoiceCallSession } from '@prisma/client';
@@ -22,21 +22,16 @@ export function AdminVoiceCallOverlay({ callSession, onClose, isOpen }: AdminVoi
   const { toast } = useToast();
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  const localAudioRef = useRef<HTMLAudioElement>(null);
 
-  // Initialize WebRTC call for admin
   const webrtc = useWebRTCCall({
     callId: callSession?.id || 'dummy',
     role: 'admin',
     onStatusChange: (status) => {
-      console.log('[Admin Voice Call] Status changed:', status);
-      
       if (status === 'connected') {
         toast({
-          title: 'Connected',
-          description: `Connected to ${callSession?.customerName}`,
+          title: 'Direct Connection Active',
+          description: `Client ${callSession?.customerName} is now live.`,
         });
-        // Start duration timer
         if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
         durationIntervalRef.current = setInterval(() => {
           setCallDuration(prev => prev + 1);
@@ -46,231 +41,172 @@ export function AdminVoiceCallOverlay({ callSession, onClose, isOpen }: AdminVoi
       }
     },
     onError: (error) => {
-      console.error('[Admin Voice Call] Error:', error);
       toast({
-        title: 'Call Error',
+        title: 'Boutique Protocol Error',
         description: error,
         variant: 'destructive'
       });
     }
   });
 
-  // Set up remote audio stream
   useEffect(() => {
     if (remoteAudioRef.current && webrtc.remoteStream) {
       remoteAudioRef.current.srcObject = webrtc.remoteStream;
       remoteAudioRef.current.volume = volume / 100;
-      
       const playAudio = async () => {
         try {
           await remoteAudioRef.current?.play();
-          console.log('[Admin Voice Call] Remote audio playing');
         } catch (error) {
-          console.error('[Admin Voice Call] Error playing remote audio:', error);
           setTimeout(playAudio, 1000);
         }
       };
-      
       playAudio();
     }
   }, [webrtc.remoteStream, volume]);
 
-  // Set up local audio stream (for monitoring own audio)
-  useEffect(() => {
-    if (localAudioRef.current && webrtc.localStream && !webrtc.isMuted) {
-      // Note: In production, you might not want to play local stream back
-      // This is mainly for testing purposes
-      localAudioRef.current.muted = true; // Mute to avoid feedback
-      localAudioRef.current.srcObject = webrtc.localStream;
-    }
-  }, [webrtc.localStream, webrtc.isMuted]);
-
-  // Update volume when slider changes
-  useEffect(() => {
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.volume = volume / 100;
-    }
-  }, [volume]);
-
-  // Handle closing the overlay
   const handleClose = async () => {
     if (webrtc.status !== 'idle' && webrtc.status !== 'ended') {
       webrtc.endCall();
     }
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     setCallDuration(0);
-    
-    // Clean up audio elements
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.srcObject = null;
-    }
-    if (localAudioRef.current) {
-      localAudioRef.current.srcObject = null;
-    }
-    
     onClose();
   };
 
   if (!isOpen || !callSession) return null;
 
   const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
+    const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${secs}s`;
-    }
-    return `${minutes}m ${secs}s`;
+    return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   if (isMinimized) {
     return (
       <div 
-        className={cn(
-          "fixed bottom-4 right-4 z-50 rounded-lg shadow-lg p-4 cursor-pointer hover:shadow-xl transition-all duration-300",
-          "bg-gradient-to-br from-gray-900 to-black border border-white/20",
-          "hover:border-white/40 hover:from-gray-800 hover:to-gray-900"
-        )}
+        className="fixed bottom-6 right-6 z-50 rounded-xl shadow-2xl p-5 cursor-pointer bg-black border border-white/10 hover:border-primary/40 transition-all duration-500"
         onClick={() => setIsMinimized(false)}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <div className={cn(
-            "w-3 h-3 rounded-full animate-pulse",
+            "w-2 h-2 rounded-full animate-pulse",
             webrtc.status === 'connected' ? 'bg-green-500' : 'bg-yellow-500'
-          )}></div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-white font-semibold text-sm">{callSession.customerName}</span>
-            <span className="text-white/60 text-xs">{formatDuration(callDuration)}</span>
+          )} />
+          <div className="flex flex-col">
+            <span className="text-white font-headline italic text-sm">{callSession.customerName}</span>
+            <span className="text-white/40 text-[10px] uppercase tracking-widest font-bold">{formatDuration(callDuration)}</span>
           </div>
-          <Radio className="w-4 h-4 text-primary animate-pulse ml-2" />
+          <Activity className="w-4 h-4 text-primary animate-pulse ml-2" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      {/* Hidden audio elements for audio streams */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
       <audio ref={remoteAudioRef} playsInline />
-      <audio ref={localAudioRef} playsInline />
 
-      {/* Main call panel */}
-      <div className={cn(
-        "bg-gradient-to-b from-gray-900 to-black border rounded-2xl shadow-2xl p-8 w-full max-w-md",
-        "border-white/20 hover:border-white/30 transition-all duration-300",
-        webrtc.status === 'connected' && 'ring-2 ring-green-500/20'
-      )}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-headline text-white mb-1">{callSession.customerName}</h2>
-            <p className="text-xs text-white/60 font-mono">ID: {callSession.customerId.slice(0, 12)}...</p>
-          </div>
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="text-white/60 hover:text-white transition-colors"
-          >
-            <Minimize2 className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Status indicator */}
-        <div className="bg-black/40 rounded-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full animate-pulse ${
-                webrtc.status === 'connected' ? 'bg-green-500' : 
-                webrtc.status === 'connecting' ? 'bg-yellow-500' : 
-                'bg-red-500'
-              }`}></div>
-              <span className="text-white capitalize font-semibold">{webrtc.status}</span>
-            </div>
-            <span className="text-white/70 font-mono">{formatDuration(callDuration)}</span>
-          </div>
-        </div>
-
-        {/* Call stats */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="bg-white/5 rounded p-3">
-            <p className="text-xs text-white/60 mb-1">Answered By</p>
-            <p className="text-sm font-semibold text-white">{callSession.adminName || 'N/A'}</p>
-          </div>
-          <div className="bg-white/5 rounded p-3">
-            <p className="text-xs text-white/60 mb-1">Call Status</p>
-            <p className="text-sm font-semibold text-white capitalize">{callSession.status}</p>
-          </div>
-        </div>
-
-        {/* Control buttons */}
-        <div className="flex gap-3 mb-6 flex-wrap">
-          <button
-            onClick={webrtc.toggleMute}
-            className={`flex-1 min-w-24 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
-              webrtc.isMuted
-                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30'
-                : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 border border-green-500/30'
-            }`}
-          >
-            {webrtc.isMuted ? (
-              <>
-                <MicOff className="w-5 h-5" />
-                Unmute
-              </>
-            ) : (
-              <>
-                <Mic className="w-5 h-5" />
-                Mute
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={() => setIsVolumeExpanded(!isVolumeExpanded)}
-            className="flex-1 min-w-24 py-3 rounded-lg font-semibold transition-all bg-white/10 text-white hover:bg-white/20 border border-white/20 flex items-center justify-center gap-2"
-          >
-            {volume === 0 ? (
-              <VolumeX className="w-5 h-5" />
-            ) : (
-              <Volume2 className="w-5 h-5" />
-            )}
-            {volume}%
-          </button>
-        </div>
-
-        {/* Volume slider */}
-        {isVolumeExpanded && (
-          <div className="mb-6 p-4 bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center gap-3">
-              <VolumeX className="w-4 h-4 text-white/60" />
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={(e) => setVolume(Number(e.target.value))}
-                className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer accent-primary"
-              />
-              <Volume2 className="w-4 h-4 text-primary" />
-              <span className="text-white font-semibold min-w-12 text-right">{volume}%</span>
-            </div>
-          </div>
-        )}
-
-        {/* End call button */}
-        <button
-          onClick={handleClose}
-          className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+      <div className="bg-black border border-white/10 rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.8)] p-10 w-full max-w-xl relative overflow-hidden">
+        {/* Background Visualizer */}
+        <div 
+          className="absolute inset-0 opacity-5 pointer-events-none transition-all duration-100"
+          style={{ transform: `scale(${1 + (webrtc.remoteAudioLevel / 100)})` }}
         >
-          <PhoneOff className="w-5 h-5" />
-          End Call
-        </button>
+          <div className="w-full h-full bg-primary rounded-full blur-[120px]" />
+        </div>
 
-        {/* Additional info */}
-        <div className="mt-6 pt-6 border-t border-white/10">
-          <p className="text-xs text-white/50 text-center">
-            Started at {new Date(callSession.startedAt).toLocaleTimeString()}
-          </p>
+        <div className="relative z-10">
+          <header className="flex items-start justify-between mb-10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <p className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/40">Active Concierge Live</p>
+              </div>
+              <h2 className="text-4xl font-headline italic text-white">{callSession.customerName}</h2>
+            </div>
+            <button onClick={() => setIsMinimized(true)} className="text-white/20 hover:text-white p-2">
+              <Minimize2 className="w-6 h-6" />
+            </button>
+          </header>
+
+          <div className="grid grid-cols-2 gap-6 mb-10">
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6">
+              <div className="flex items-center gap-3 mb-2">
+                <Activity className="w-4 h-4 text-green-400" />
+                <span className="text-[10px] uppercase tracking-widest font-bold text-white/40">Status</span>
+              </div>
+              <p className="text-lg font-headline italic text-white capitalize">{webrtc.status}</p>
+            </div>
+            <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-6 text-right">
+              <div className="flex items-center justify-end gap-3 mb-2">
+                <span className="text-[10px] uppercase tracking-widest font-bold text-white/40">Duration</span>
+                <Radio className="w-4 h-4 text-primary animate-pulse" />
+              </div>
+              <p className="text-2xl font-mono font-bold text-primary">{formatDuration(callDuration)}</p>
+            </div>
+          </div>
+
+          {/* Voice Levels */}
+          <div className="space-y-4 mb-10">
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-widest font-bold text-white/30">
+              <span>Your Audio</span>
+              <span>{webrtc.localAudioLevel}%</span>
+            </div>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-primary transition-all duration-75" style={{ width: `${webrtc.localAudioLevel}%` }} />
+            </div>
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-widest font-bold text-white/30">
+              <span>Client Audio</span>
+              <span>{webrtc.remoteAudioLevel}%</span>
+            </div>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full bg-green-400 transition-all duration-75" style={{ width: `${webrtc.remoteAudioLevel}%` }} />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              <button
+                onClick={webrtc.toggleMute}
+                className={cn(
+                  "flex-1 py-5 rounded-2xl font-bold uppercase tracking-widest text-[10px] transition-all flex items-center justify-center gap-3 border",
+                  webrtc.isMuted 
+                    ? "bg-red-500/10 border-red-500/30 text-red-400" 
+                    : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                )}
+              >
+                {webrtc.isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {webrtc.isMuted ? 'Unmute Mic' : 'Mute Concierge'}
+              </button>
+
+              <button
+                onClick={() => setIsVolumeExpanded(!isVolumeExpanded)}
+                className="w-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 hover:text-white transition-all"
+              >
+                {volume === 0 ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {isVolumeExpanded && (
+              <div className="p-6 bg-white/[0.02] border border-white/5 rounded-2xl animate-in slide-in-from-top-2">
+                <input
+                  type="range"
+                  min="0" max="100"
+                  value={volume}
+                  onChange={(e) => setVolume(Number(e.target.value))}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleClose}
+              className="w-full py-6 bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest text-xs rounded-2xl transition-all flex items-center justify-center gap-3 shadow-2xl shadow-red-900/20"
+            >
+              <PhoneOff className="w-5 h-5" />
+              Terminate Call
+            </button>
+          </div>
         </div>
       </div>
     </div>

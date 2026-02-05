@@ -3,13 +3,14 @@
 import Image from 'next/image';
 import { getHomePageData, GroupedProducts } from '@/app/actions/page-data';
 import { getOrdersByIds, OrderWithItems } from '@/app/actions/orders';
-import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck, Bell, User, LogOut } from 'lucide-react';
+import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone, Package, Clock, CheckCircle2, Truck, Bell, User, Star, Compass, Search as SearchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
 import { useChat } from '@/context/chat-context';
+import { useSearch } from '@/context/search-context';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -68,6 +69,7 @@ export default function Home() {
   const { cart, addToCart, removeFromCart, updateQuantity, cartTotal, cartCount } = useCart();
   const { startCall } = useVoiceCall();
   const { openChat } = useChat();
+  const { openSearch } = useSearch();
   const { toast } = useToast();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
@@ -209,16 +211,16 @@ export default function Home() {
 
     const productObserver = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const catIndex = Number(entry.target.getAttribute('data-parent-category-index'));
-            const prodIndex = Number(entry.target.getAttribute('data-product-index'));
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const catIndex = Number(entry.target.getAttribute('data-parent-category-index'));
+          const prodIndex = Number(entry.target.getAttribute('data-product-index'));
             setActiveProductIndices(prev => ({
               ...prev,
               [catIndex]: prodIndex
             }));
-          }
-        });
+        }
+      });
       },
       { threshold: 0.6 }
     );
@@ -354,18 +356,27 @@ export default function Home() {
 
       {/* Floating UI */}
       <div className="fixed top-4 right-4 md:top-8 md:right-12 z-50 flex items-center gap-4">
+        {/* Search Trigger */}
+        <Button 
+          onClick={openSearch}
+          variant="ghost" 
+          size="icon" 
+          className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
+        >
+          <SearchIcon className="w-5 h-5 md:w-6 md:h-6" />
+        </Button>
         {/* Account Button */}
         {user ? (
           <div className="flex items-center gap-2">
-            <Link href="/profile" title="View Portfolio">
+          <Link href="/profile" title="View Portfolio">
               <Button 
                 variant="ghost" 
                 size="icon" 
                 className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
               >
-                <User className="w-5 h-5 md:w-6 md:h-6" />
-              </Button>
-            </Link>
+              <User className="w-5 h-5 md:w-6 md:h-6" />
+            </Button>
+          </Link>
           </div>
         ) : (
           <Link href="/login" title="Sign In">
@@ -438,7 +449,7 @@ export default function Home() {
                       
                       <div className="space-y-3 mb-4">
                         {order.items.slice(0, 2).map((item) => (
-                          <div key={item.id} className="flex gap-3 items-center">
+                    <div key={item.id} className="flex gap-3 items-center">
                             <div className="relative w-10 h-12 rounded overflow-hidden flex-shrink-0">
                               <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
                             </div>
@@ -505,18 +516,18 @@ export default function Home() {
               ) : (
                 <div className="space-y-8 md:space-y-10">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex gap-4 md:gap-6 group box-border animate-in fade-in slide-in-from-right-4 duration-500">
+              <div key={item.id} className="flex gap-4 md:gap-6 group box-border animate-in fade-in slide-in-from-right-4 duration-500">
                       <div className="relative w-20 h-28 md:w-24 md:h-32 bg-white/[0.03] shrink-0 overflow-hidden rounded-sm border border-white/5 transition-colors group-hover:border-primary/30">
                         {item.image && (
                         <Image src={item.image} alt={item.name} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                         )}
                       </div>
-                      <div className="flex-1 flex flex-col justify-between py-1">
-                        <div className="flex justify-between items-start gap-2">
-                          <div className="space-y-1">
-                            <h4 className="font-headline text-lg md:text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.name}</h4>
-                            <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
-                          </div>
+                <div className="flex-1 flex flex-col justify-between py-1">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="space-y-1">
+                      <h4 className="font-headline text-lg md:text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">{item.name}</h4>
+                      <p className="font-bold text-primary/80 text-sm">${item.price.toLocaleString()}</p>
+                    </div>
                           <div className="flex gap-1 md:gap-2">
                             <button 
                               onClick={() => removeFromCart(item.id)}
@@ -526,9 +537,9 @@ export default function Home() {
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-2 md:mt-4">
-                          <div className="flex items-center border border-white/10 rounded-sm bg-white/5 overflow-hidden">
+                  </div>
+                  <div className="flex items-center justify-between mt-2 md:mt-4">
+                    <div className="flex items-center border border-white/10 rounded-sm bg-white/5 overflow-hidden">
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
                               className="p-1.5 hover:bg-white/10 transition-colors disabled:opacity-20"
@@ -536,7 +547,7 @@ export default function Home() {
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            <span className="w-8 text-center text-xs font-bold font-mono">{item.quantity}</span>
+                      <span className="w-8 text-center text-xs font-bold font-mono">{item.quantity}</span>
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
                               className="p-1.5 hover:bg-white/10 transition-colors"
@@ -595,6 +606,9 @@ export default function Home() {
           {group.products.map((product, productIndex) => {
             const isVisible = activeCategoryIndex === categoryIndex && activeProductIndices[categoryIndex] === productIndex;
             const zoomed = isZoomed[product.id];
+            
+            // Get category slug if available (assuming categories data is indexed same way)
+            const categorySlug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
             return (
               <div 
@@ -656,6 +670,7 @@ export default function Home() {
                       <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 flex items-center gap-2">
                         <MousePointer2 className="w-3 h-3 text-primary animate-pulse" />
                         <span className="text-[8px] uppercase tracking-widest font-bold text-white">Tap to Explore Detail</span>
+                        {product.featured && <div className="absolute top-24 left-12 animate-in fade-in slide-in-from-left-4 duration-1000"><Badge className="bg-primary/20 text-primary border border-primary/50 rounded-none px-4 py-2 uppercase tracking-[0.3em] text-[10px] font-bold backdrop-blur-xl"><Star className="w-3 h-3 mr-2 fill-current" /> Boutique Spotlight</Badge></div>}
                       </div>
                     </div>
                   )}
@@ -671,9 +686,12 @@ export default function Home() {
                       isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
                     )}>
                       <div className="flex items-center gap-4 mb-2">
-                        <span className="inline-flex items-center gap-2 py-1 px-3 md:px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[8px] md:text-[10px] backdrop-blur-md rounded-full">
-                          {group.name}
-                        </span>
+                        <Link href={`/${categorySlug}`} className="group/cat">
+                          <span className="inline-flex items-center gap-2 py-1 px-3 md:px-4 bg-primary/20 border border-primary/50 text-primary font-bold tracking-[0.3em] uppercase text-[8px] md:text-[10px] backdrop-blur-md rounded-full group-hover/cat:bg-primary group-hover/cat:text-black transition-all">
+                            {group.name}
+                            <Compass className="w-3 h-3 ml-1" />
+                          </span>
+                        </Link>
                         <div className="h-[1px] flex-1 bg-white/10" />
                       </div>
                       <p className="text-[8px] md:text-[10px] text-white/40 uppercase tracking-[0.4em] font-medium">Piece 0{productIndex + 1} / 0{group.products.length}</p>
@@ -720,13 +738,11 @@ export default function Home() {
                       >
                         <ShoppingBag className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Add To Bag</span>
                       </Button>
-                      
-                      <Button 
-                        onClick={() => startCall({ name: product.name, materials: product.materials })}
-                        className="flex-1 min-w-[140px] bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-12 md:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
-                      >
-                        <Phone className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Voice Stylist</span>
-                      </Button>
+                      <Link href={`/${categorySlug}`} className="flex-1">
+                        <Button variant="outline" className="w-full h-12 md:h-16 border-white/20 text-white/60 hover:text-primary hover:border-primary rounded-none text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden">
+                          Explore Collection
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </div>

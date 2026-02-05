@@ -11,8 +11,10 @@ type VoiceCallContextType = {
   isMuted: boolean;
   callDuration: number;
   remoteStream: MediaStream | null;
+  localAudioLevel: number;
+  remoteAudioLevel: number;
   setIsMinimized: (minimized: boolean) => void;
-  startCall: () => Promise<void>;
+  startCall: (productContext?: { name: string; materials: string }) => Promise<void>;
   endCall: () => void;
   toggleMute: () => void;
 };
@@ -81,9 +83,6 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
       durationIntervalRef.current = null;
     }
 
-    console.log('[Voice Call] Call ended. Was connected:', wasConnected, 'Duration:', callDuration);
-
-    // Update call session in database
     if (callId) {
       let status = 'ended';
       let duration = null;
@@ -95,8 +94,6 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
         // If customer cancels before admin answers, mark as missed
         status = 'missed';
       }
-
-      console.log('[Voice Call] Updating session:', { callId, status, duration });
 
       fetch('/api/calls/session', {
         method: 'PATCH',
@@ -116,24 +113,22 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     callStartTimeRef.current = null;
   };
 
-  const startCall = async () => {
+  const startCall = async (productContext?: { name: string; materials: string }) => {
     try {
       setIsCalling(true);
       setIsMinimized(false);
       setCallDuration(0);
 
-      toast({
-        title: "Initiating Call",
-        description: "Connecting to admin support...",
-      });
+      const customerName = productContext 
+        ? `Boutique Client (Inquiry: ${productContext.name})` 
+        : 'Boutique Client';
 
-      // Create call session
       const response = await fetch('/api/calls/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId: `customer-${Date.now()}`,
-          customerName: 'Guest Customer',
+          customerName,
         }),
       });
 
@@ -192,6 +187,8 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
       isMuted: webrtcEnabled ? webrtc.isMuted : false,
       callDuration,
       remoteStream: webrtcEnabled ? webrtc.remoteStream : null,
+      localAudioLevel: webrtcEnabled ? webrtc.localAudioLevel : 0,
+      remoteAudioLevel: webrtcEnabled ? webrtc.remoteAudioLevel : 0,
       setIsMinimized,
       startCall, 
       endCall,

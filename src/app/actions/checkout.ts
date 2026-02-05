@@ -11,6 +11,9 @@ const CheckoutFormSchema = z.object({
   shippingAddress: z.string().min(10, 'Please enter a complete address'),
   billingAddress: z.string().min(10, 'Please enter a complete address'),
   useSameAddress: z.boolean().optional(),
+  paymentMethod: z.enum(['bank_transfer', 'credit_card', 'crypto', 'concierge'], {
+    required_error: "Please select a payment method",
+  }),
 });
 export type CheckoutFormData = z.infer<typeof CheckoutFormSchema>;
 
@@ -56,6 +59,7 @@ export async function processCheckout(
       customerPhone: validatedData.customerPhone,
       shippingAddress: validatedData.shippingAddress,
       billingAddress: billingAddress,
+      paymentMethod: validatedData.paymentMethod,
       items: cartItems.map(item => ({
         productId: item.id,
         quantity: item.quantity,

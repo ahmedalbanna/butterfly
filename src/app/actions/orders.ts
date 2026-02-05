@@ -11,6 +11,7 @@ export type CreateOrderData = {
   customerPhone?: string;
   shippingAddress: string;
   billingAddress: string;
+  paymentMethod: string;
   items: {
     productId: string;
     quantity: number;
@@ -29,7 +30,7 @@ export type OrderWithItems = Order & {
 };
 
 /**
- * Create a new order with items
+ * Create a new order with items, including stock validation and decrementing
  */
 export async function createOrder(data: CreateOrderData): Promise<Order | null> {
   try {
@@ -44,33 +45,57 @@ export async function createOrder(data: CreateOrderData): Promise<Order | null> 
     const finalUserId = user?.id || data.userId;
     const total = data.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // 2. Create the order
-    const order = await prisma.order.create({
-      data: {
-        userId: finalUserId,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerPhone: data.customerPhone,
-        shippingAddress: data.shippingAddress,
-        billingAddress: data.billingAddress,
-        total,
-        status: 'pending',
-        items: {
-          create: data.items.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price
-          }))
+    // 2. Perform order creation and stock update in a single transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // Validate stock for all items first
+      for (const item of data.items) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { stock: true, name: true }
+        });
+
+        if (!product || product.stock < item.quantity) {
+          throw new Error(`Insufficient stock for: ${product?.name || 'Unknown piece'}`);
         }
-      },
-      include: {
-        items: true
       }
+
+      // Decrement stock
+      for (const item of data.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } }
+        });
+      }
+
+      // Create the order
+      return await tx.order.create({
+        data: {
+          userId: finalUserId,
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerPhone: data.customerPhone,
+          shippingAddress: data.shippingAddress,
+          billingAddress: data.billingAddress,
+          total,
+          status: 'pending',
+          // paymentMethod: data.paymentMethod,
+          items: {
+            create: data.items.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          }
+        },
+        include: {
+          items: true
+        }
+      });
     });
 
-    return order;
+    return result;
   } catch (error) {
-    console.error('Error creating order:', error);
+    console.error('Error creating order:', error instanceof Error ? error.message : error);
     return null;
   }
 }
