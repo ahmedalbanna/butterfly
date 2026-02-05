@@ -2,16 +2,42 @@ import Redis from 'ioredis';
 
 /**
  * Redis client singleton for WebRTC signaling and caching
- * Used for storing signaling messages and pub/sub notifications
+ * Supports both single Redis and Redis Sentinel configurations
  */
 
 let redis: Redis | null = null;
 
-export function getRedisClient(): Redis {
-  if (!redis) {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+/**
+ * Detect Redis mode from environment
+ */
+function getRedisMode(): 'single' | 'sentinel' {
+  const mode = process.env.REDIS_MODE || 'single';
+  return mode === 'sentinel' ? 'sentinel' : 'single';
+}
+
+/**
+ * Create Redis client with Sentinel support
+ */
+function createRedisClient(): Redis {
+  const mode = getRedisMode();
+  
+  if (mode === 'sentinel') {
+    // Sentinel mode
+    const sentinelHosts = process.env.REDIS_SENTINEL_HOSTS || 'localhost:26379,localhost:26380,localhost:26381';
+    const masterName = process.env.REDIS_SENTINEL_MASTER || 'mymaster';
+    const password = process.env.REDIS_SENTINEL_PASSWORD;
     
-    redis = new Redis(redisUrl, {
+    const sentinels = sentinelHosts.split(',').map(host => {
+      const [hostname, port] = host.trim().split(':');
+      return { host: hostname, port: parseInt(port) || 26379 };
+    });
+    
+    console.log(`[Redis] Connecting to Sentinel cluster: ${masterName} via ${sentinels.length} sentinels`);
+    
+    return new Redis({
+      sentinels,
+      name: masterName,
+      password,
       maxRetriesPerRequest: 3,
       retryStrategy(times) {
         const delay = Math.min(times * 50, 2000);
@@ -20,12 +46,41 @@ export function getRedisClient(): Redis {
       reconnectOnError(err) {
         const targetError = 'READONLY';
         if (err.message.includes(targetError)) {
-          // Reconnect on READONLY error
+          return true;
+        }
+        return false;
+      },
+      sentinelRetryStrategy(times) {
+        const delay = Math.min(times * 100, 3000);
+        return delay;
+      },
+    });
+  } else {
+    // Single Redis mode
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    
+    console.log(`[Redis] Connecting to single Redis: ${redisUrl.replace(/:[^:@]+@/, ':****@')}`);
+    
+    return new Redis(redisUrl, {
+      maxRetriesPerRequest: 3,
+      retryStrategy(times) {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      reconnectOnError(err) {
+        const targetError = 'READONLY';
+        if (err.message.includes(targetError)) {
           return true;
         }
         return false;
       },
     });
+  }
+}
+
+export function getRedisClient(): Redis {
+  if (!redis) {
+    redis = createRedisClient();
 
     redis.on('connect', () => {
       console.log('[Redis] Connected successfully');
@@ -38,6 +93,10 @@ export function getRedisClient(): Redis {
     redis.on('reconnecting', () => {
       console.log('[Redis] Reconnecting...');
     });
+    
+    redis.on('+switch-master', (masterName, oldHost, oldPort, newHost, newPort) => {
+      console.log(`[Redis Sentinel] Master switched from ${oldHost}:${oldPort} to ${newHost}:${newPort}`);
+    });
   }
 
   return redis;
@@ -46,20 +105,17 @@ export function getRedisClient(): Redis {
 /**
  * Create a new Redis client for pub/sub subscriptions
  * Pub/sub requires a dedicated connection
+ * Supports both single Redis and Sentinel
  */
 export function createRedisSubscriber(): Redis {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  
-  const subscriber = new Redis(redisUrl, {
-    maxRetriesPerRequest: 3,
-    retryStrategy(times) {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-  });
+  const subscriber = createRedisClient();
 
   subscriber.on('error', (err) => {
     console.error('[Redis Subscriber] Error:', err);
+  });
+  
+  subscriber.on('+switch-master', (masterName, oldHost, oldPort, newHost, newPort) => {
+    console.log(`[Redis Subscriber] Master switched from ${oldHost}:${oldPort} to ${newHost}:${newPort}`);
   });
 
   return subscriber;

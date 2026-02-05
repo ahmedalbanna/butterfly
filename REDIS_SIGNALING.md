@@ -292,15 +292,99 @@ The migration from in-memory to Redis was completed with:
 
 **Backward Compatibility**: Polling fallback ensures compatibility
 
+## High Availability Setup
+
+### Redis Sentinel
+
+For production high availability, Redis Sentinel is recommended over single Redis instance.
+
+**Benefits:**
+- ✅ Automatic failover (5-10 seconds)
+- ✅ Zero data loss during failover
+- ✅ Multi-region support
+- ✅ No code changes required
+
+**Setup:**
+
+1. **Start Sentinel cluster** (local development):
+```bash
+docker compose -f docker-compose.redis-sentinel.yml up -d
+```
+
+2. **Configure application**:
+```bash
+# .env
+REDIS_MODE=sentinel
+REDIS_SENTINEL_HOSTS=localhost:26379,localhost:26380,localhost:26381
+REDIS_SENTINEL_MASTER=mymaster
+```
+
+3. **Verify connection**:
+```bash
+curl http://localhost:9002/api/health/redis
+```
+
+**Architecture:**
+- 1 Master Redis (handles writes)
+- 2 Replica Redis (read-only copies)
+- 3 Sentinel nodes (monitoring & failover)
+- Quorum: 2 sentinels must agree for failover
+
+**Failover Testing:**
+```bash
+# Kill master
+docker compose -f docker-compose.redis-sentinel.yml stop redis-master
+
+# Watch automatic failover (5-10 seconds)
+docker compose -f docker-compose.redis-sentinel.yml logs -f redis-sentinel-1
+
+# Application automatically reconnects to new master
+```
+
+**See [`REDIS_HA_SETUP.md`](./REDIS_HA_SETUP.md) for complete guide.**
+
+### Production Deployment
+
+**AWS ElastiCache:**
+```bash
+# Create replication group with automatic failover
+aws elasticache create-replication-group \
+  --replication-group-id luxefinds-redis \
+  --engine redis \
+  --cache-node-type cache.t3.small \
+  --num-cache-clusters 3 \
+  --automatic-failover-enabled \
+  --multi-az-enabled
+```
+
+**Redis Cloud:**
+- Enable High Availability option
+- Get Sentinel endpoints from dashboard
+- Configure REDIS_SENTINEL_HOSTS
+
+### Zero-Downtime Migration
+
+The implementation supports gradual migration:
+
+1. **Keep single Redis** (REDIS_MODE=single)
+2. **Deploy Sentinel-aware code** (no impact)
+3. **Start Sentinel cluster** (runs alongside)
+4. **Switch to Sentinel** (REDIS_MODE=sentinel)
+5. **Monitor for 24 hours**
+6. **Remove single Redis**
+
+Rollback: Simply switch back to REDIS_MODE=single
+
 ## Future Enhancements
 
-- [ ] Redis Pub/Sub for call queue notifications
+- [ ] Redis Pub/Sub for call queue notifications ✅ (Implemented)
 - [ ] Redis Streams for call history/analytics
 - [ ] Rate limiting with Redis
 - [ ] Distributed locks for admin assignment
 - [ ] Call recording metadata in Redis
+- [ ] Redis Sentinel monitoring dashboard ✅ (Health endpoint added)
 
 ---
 
 **Last Updated**: February 2026
-**Status**: ✅ Production Ready
+**Status**: ✅ Production Ready with High Availability Support
