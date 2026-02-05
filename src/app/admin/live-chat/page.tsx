@@ -33,7 +33,24 @@ export default function LiveChatPage() {
   useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 3000);
-    return () => clearInterval(interval);
+    
+    // Pause polling when tab is hidden (Page Visibility API)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearInterval(interval);
+      } else {
+        loadData();
+        const newInterval = setInterval(loadData, 3000);
+        return () => clearInterval(newInterval);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadData = async () => {

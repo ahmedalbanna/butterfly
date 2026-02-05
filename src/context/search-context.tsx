@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef, useMemo } from 'react';
 import { Product } from '@prisma/client';
 import { searchProducts } from '@/app/actions/products';
 
@@ -22,43 +22,62 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const openSearch = useCallback(() => setIsOpen(true), []);
   const closeSearch = useCallback(() => {
     setIsOpen(false);
     setQuery('');
     setResults([]);
+    // Clear any pending search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
+    }
   }, []);
 
+  // Debounced search with 300ms delay
   const performSearch = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const data = await searchProducts(searchQuery);
-      setResults(data);
-    } catch (error) {
-      console.error('Search failed:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
+
+    setIsLoading(true);
+    
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const data = await searchProducts(searchQuery);
+        setResults(data);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setResults([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }, 300);
   }, []);
 
+  // Memoize context value
+  const value = useMemo(() => ({
+    isOpen,
+    query,
+    results,
+    isLoading,
+    openSearch,
+    closeSearch,
+    setQuery,
+    performSearch
+  }), [isOpen, query, results, isLoading, openSearch, closeSearch, performSearch]);
+
   return (
-    <SearchContext.Provider value={{
-      isOpen,
-      query,
-      results,
-      isLoading,
-      openSearch,
-      closeSearch,
-      setQuery,
-      performSearch
-    }}>
+    <SearchContext.Provider value={value}>
       {children}
     </SearchContext.Provider>
   );

@@ -35,8 +35,24 @@ export default function CallsPage() {
   useEffect(() => {
     loadData();
     // Refresh every 5 seconds
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    let interval = setInterval(loadData, 5000);
+    
+    // Pause polling when tab is hidden (Page Visibility API)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (interval) clearInterval(interval);
+      } else {
+        loadData();
+        interval = setInterval(loadData, 5000);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const loadData = async () => {

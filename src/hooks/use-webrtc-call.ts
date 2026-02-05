@@ -78,6 +78,11 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
         remoteAnalyzerRef.current = analyzer;
       }
 
+      // Cancel previous animation frame if exists
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
       const checkVolume = () => {
         const dataArray = new Uint8Array(analyzer.frequencyBinCount);
         analyzer.getByteFrequencyData(dataArray);
@@ -390,9 +395,23 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
       signalingPollingRef.current = null;
     }
 
+    // Cancel animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
+
+    // Close audio context to prevent memory leak
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(err => 
+        console.warn('[WebRTC] Failed to close audio context:', err)
+      );
+      audioContextRef.current = null;
+    }
+
+    // Clear analyzer references
+    localAnalyzerRef.current = null;
+    remoteAnalyzerRef.current = null;
 
     setLocalStream(null);
     setRemoteStream(null);
@@ -401,7 +420,9 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
     updateStatus('ended');
 
     // Cleanup signaling messages
-    fetch(`/api/calls/signal?callId=${callId}`, { method: 'DELETE' });
+    fetch(`/api/calls/signal?callId=${callId}`, { method: 'DELETE' }).catch(err =>
+      console.warn('[WebRTC] Failed to cleanup signaling:', err)
+    );
   }, [callId, localStream, status, sendSignalingMessage, updateStatus, stopRecording]);
 
   // Toggle mute
@@ -418,8 +439,29 @@ export function useWebRTCCall({ callId, role, onStatusChange, onError }: WebRTCC
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (status !== 'idle' && status !== 'ended') {
-        endCall();
+      // Cleanup all resources
+      if (signalingPollingRef.current) {
+        clearInterval(signalingPollingRef.current);
+      }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      
+      if (audioContextRef.current) {
+        audioContextRef.current.close().catch(() => {});
+      }
+      
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+      }
+      
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
       }
     };
   }, []);

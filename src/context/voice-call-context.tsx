@@ -103,7 +103,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
           status,
           duration,
         }),
-      });
+      }).catch(err => console.error('[Voice Call] Failed to update session:', err));
     }
 
     setIsCalling(false);
@@ -111,6 +111,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     setCallId(null);
     setCallDuration(0);
     callStartTimeRef.current = null;
+    wasConnectedRef.current = false;
   };
 
   const startCall = async (productContext?: { name: string; materials: string }) => {
@@ -177,7 +178,19 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     if (callId && webrtcEnabled && webrtc.status === 'idle') {
       webrtc.startCall();
     }
-  }, [callId]);
+  }, [callId, webrtcEnabled, webrtc]);
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
+      // Reset refs
+      callStartTimeRef.current = null;
+      wasConnectedRef.current = false;
+    };
+  }, []);
 
   return (
     <VoiceCallContext.Provider value={{ 

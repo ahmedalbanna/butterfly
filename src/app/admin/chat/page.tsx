@@ -158,10 +158,28 @@ export default function AdminChatPage() {
       loadSessions();
     }, 5000);
 
+    // Pause polling when tab is hidden (Page Visibility API)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      } else {
+        loadSessions();
+        pollingIntervalRef.current = setInterval(() => {
+          loadSessions();
+        }, 5000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -175,9 +193,32 @@ export default function AdminChatPage() {
       }, 2000);
 
       // Send heartbeat every 10 seconds
-      const heartbeatInterval = setInterval(() => {
+      let heartbeatInterval = setInterval(() => {
         sendHeartbeat();
       }, 10000);
+      
+      // Pause chat polling when tab is hidden
+      const handleChatVisibilityChange = () => {
+        if (document.hidden) {
+          if (chatPollingIntervalRef.current) {
+            clearInterval(chatPollingIntervalRef.current);
+            chatPollingIntervalRef.current = null;
+          }
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+          }
+        } else {
+          pollSelectedChat();
+          chatPollingIntervalRef.current = setInterval(() => {
+            pollSelectedChat();
+          }, 2000);
+          heartbeatInterval = setInterval(() => {
+            sendHeartbeat();
+          }, 10000);
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleChatVisibilityChange);
 
       // Initial poll and heartbeat
       pollSelectedChat();
@@ -187,7 +228,10 @@ export default function AdminChatPage() {
         if (chatPollingIntervalRef.current) {
           clearInterval(chatPollingIntervalRef.current);
         }
-        clearInterval(heartbeatInterval);
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+        }
+        document.removeEventListener('visibilitychange', handleChatVisibilityChange);
         
         // Disconnect heartbeat
         fetch('/api/chat/poll', {
