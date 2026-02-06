@@ -9,6 +9,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: "postgresql://butterfly_admin:butterfly_secure_pass_2026@185.190.140.93:5432/butterfly",
+    url: "postgresql://postgres:postgres@localhost:5432/postgres",
   },
 });

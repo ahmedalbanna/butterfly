@@ -271,3 +271,22 @@ model CustomOrder {
   @@index([customerEmail])
   @@index([createdAt])
 }
+
+// Event Store for CDC Event Replay and Event Sourcing
+model CDCEvent {
+  id            String   @id @default(cuid())
+  eventType     String
+  aggregateType String
+  aggregateId   String
+  operation     String
+  payload       Json
+  metadata      Json     @default("{}")
+  version       Int
+  timestamp     DateTime @default(now())
+
+  @@unique([aggregateType, aggregateId, version])
+  @@index([aggregateType, aggregateId])
+  @@index([aggregateType, aggregateId, version])
+  @@index([timestamp])
+  @@index([eventType])
+}

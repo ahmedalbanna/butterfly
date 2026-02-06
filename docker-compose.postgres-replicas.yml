@@ -1,0 +1,130 @@
+version: '3.8'
+
+# PostgreSQL Primary-Replica Configuration
+# Provides read replicas for load distribution and high availability
+
+services:
+  # Primary PostgreSQL (Write operations)
+  postgres-primary:
+    image: postgres:16-alpine
+    container_name: luxefinds-postgres-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      # Replication settings
+      POSTGRES_INITDB_ARGS: "-c wal_level=replica -c max_wal_senders=10 -c max_replication_slots=10"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+      - ./postgres-primary-init.sh:/docker-entrypoint-initdb.d/init-replication.sh
+    command: >
+      postgres
+      -c wal_level=replica
+      -c hot_standby=on
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby_feedback=on
+    networks:
+      - butterfly-db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Read Replica 1
+  postgres-replica-1:
+    image: postgres:16-alpine
+    container_name: luxefinds-postgres-replica-1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGUSER: replicator
+      PGPASSWORD: replicator_password
+    ports:
+      - "5433:5432"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    volumes:
+      - postgres-replica-1-data:/var/lib/postgresql/data
+      - ./postgres-replica-init.sh:/docker-entrypoint-initdb.d/init-replica.sh
+    command: >
+      bash -c "
+      until pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -v -P -W; do
+        echo 'Waiting for primary...';
+        sleep 5;
+      done &&
+      echo 'standby_mode = on' > /var/lib/postgresql/data/standby.signal &&
+      echo \"primary_conninfo = 'host=postgres-primary port=5432 user=replicator password=replicator_password'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      postgres
+      "
+    networks:
+      - butterfly-db
+    restart: unless-stopped
+
+  # Read Replica 2
+  postgres-replica-2:
+    image: postgres:16-alpine
+    container_name: luxefinds-postgres-replica-2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGUSER: replicator
+      PGPASSWORD: replicator_password
+    ports:
+      - "5434:5432"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    volumes:
+      - postgres-replica-2-data:/var/lib/postgresql/data
+      - ./postgres-replica-init.sh:/docker-entrypoint-initdb.d/init-replica.sh
+    command: >
+      bash -c "
+      until pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -v -P -W; do
+        echo 'Waiting for primary...';
+        sleep 5;
+      done &&
+      echo 'standby_mode = on' > /var/lib/postgresql/data/standby.signal &&
+      echo \"primary_conninfo = 'host=postgres-primary port=5432 user=replicator password=replicator_password'\" >> /var/lib/postgresql/data/postgresql.auto.conf &&
+      postgres
+      "
+    networks:
+      - butterfly-db
+    restart: unless-stopped
+
+  # PgBouncer - Connection Pooling
+  pgbouncer:
+    image: pgbouncer/pgbouncer:latest
+    container_name: luxefinds-pgbouncer
+    environment:
+      DATABASES_HOST: postgres-primary
+      DATABASES_PORT: 5432
+      DATABASES_USER: postgres
+      DATABASES_PASSWORD: postgres
+      DATABASES_DBNAME: postgres
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: 1000
+      PGBOUNCER_DEFAULT_POOL_SIZE: 20
+    ports:
+      - "6432:5432"
+    depends_on:
+      - postgres-primary
+    volumes:
+      - ./pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+    networks:
+      - butterfly-db
+    restart: unless-stopped
+
+networks:
+  butterfly-db:
+    driver: bridge
+
+volumes:
+  postgres-primary-data:
+  postgres-replica-1-data:
+  postgres-replica-2-data:
