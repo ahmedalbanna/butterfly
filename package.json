@@ -12,10 +12,11 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:migrate": "prisma migrate reset",
+    "db:migrate": "prisma migrate",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "deploy": "prisma generate & prisma db push & prisma migrate reset & tsx prisma/seed.ts",
+    "db:status": "prisma migrate status",
+    "deploy": "prisma generate & prisma db push & prisma migrate & tsx prisma/seed.ts",
     "docker": "docker compose up -d & docker compose exec ollama ollama pull llava"
   },
   "prisma": {

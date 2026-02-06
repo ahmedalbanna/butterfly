@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { Order, OrderItem } from '@prisma/client';
 import { syncUserToDb } from './users';
+import { getCachedOrder, cacheOrder, invalidateOrder } from '@/lib/redis-cache';
 
 export type CreateOrderData = {
   userId?: string;
@@ -101,10 +102,19 @@ export async function createOrder(data: CreateOrderData): Promise<Order | null> 
 }
 
 /**
- * Get order by ID with items
+ * Get order by ID with items (with Redis caching)
  */
 export async function getOrderById(orderId: string): Promise<OrderWithItems | null> {
   try {
+    // Try cache first
+    const cached = await getCachedOrder(orderId);
+    
+    if (cached) {
+      console.log(`[Orders] Cache hit for order ${orderId}`);
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -121,6 +131,11 @@ export async function getOrderById(orderId: string): Promise<OrderWithItems | nu
         }
       }
     });
+
+    // Cache the result
+    if (order) {
+      await cacheOrder(order);
+    }
 
     return order;
   } catch (error) {
@@ -192,7 +207,7 @@ export async function getOrdersByUserId(userId: string): Promise<OrderWithItems[
 }
 
 /**
- * Update order status
+ * Update order status (invalidates cache)
  */
 export async function updateOrderStatus(orderId: string, status: string): Promise<Order | null> {
   try {
@@ -200,6 +215,9 @@ export async function updateOrderStatus(orderId: string, status: string): Promis
       where: { id: orderId },
       data: { status }
     });
+
+    // Invalidate cache for this order
+    await invalidateOrder(orderId);
 
     return order;
   } catch (error) {

@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { VoiceCallSession } from '@prisma/client';
 import { getRedisClient } from '@/lib/redis';
+import { getCachedStatistics, cacheStatistics } from '@/lib/redis-cache';
 
 /**
  * Get all call sessions

@@ -2,18 +2,42 @@
 
 import { prisma } from '@/lib/db';
 import { Product } from '@prisma/client';
+import { 
+  getCachedProduct, 
+  cacheProduct,
+  cacheMultiple,
+  getMultiple,
+  CACHE_KEYS,
+  CACHE_TTL 
+} from '@/lib/redis-cache';
 
 /**
- * Get all products from database
+ * Get all products from database with Redis caching
  */
 export async function getProducts(): Promise<Product[]> {
   try {
+    // Try cache first
+    const cacheKey = CACHE_KEYS.productList();
+    const cached = await getCachedProduct(cacheKey);
+    
+    if (cached) {
+      console.log('[Products] Cache hit for product list');
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const products = await prisma.product.findMany({
       orderBy: [
         { featured: 'desc' },
         { createdAt: 'desc' }
       ]
     });
+
+    // Cache the result
+    if (products.length > 0) {
+      await cacheProduct({ id: cacheKey, data: products });
+    }
+
     return products;
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -74,13 +98,28 @@ export async function getProductsByCategorySlug(slug: string): Promise<Product[]
 }
 
 /**
- * Get a single product by ID
+ * Get a single product by ID with Redis caching
  */
 export async function getProductById(id: string): Promise<Product | null> {
   try {
+    // Try cache first
+    const cached = await getCachedProduct(id);
+    
+    if (cached) {
+      console.log(`[Products] Cache hit for product ${id}`);
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const product = await prisma.product.findUnique({
       where: { id }
     });
+
+    // Cache the result
+    if (product) {
+      await cacheProduct(product);
+    }
+
     return product;
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -89,14 +128,30 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 /**
- * Get featured products
+ * Get featured products with Redis caching
  */
 export async function getFeaturedProducts(): Promise<Product[]> {
   try {
+    // Try cache first
+    const cacheKey = CACHE_KEYS.productList('featured');
+    const cached = await getCachedProduct(cacheKey);
+    
+    if (cached) {
+      console.log('[Products] Cache hit for featured products');
+      return cached;
+    }
+
+    // Cache miss - fetch from database
     const products = await prisma.product.findMany({
       where: { featured: true },
       orderBy: { createdAt: 'desc' }
     });
+
+    // Cache the result
+    if (products.length > 0) {
+      await cacheProduct({ id: cacheKey, data: products });
+    }
+
     return products;
   } catch (error) {
     console.error('Error fetching featured products:', error);

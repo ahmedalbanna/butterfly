@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { WebSocketServer, WebSocket } from 'ws';
 import { wsManager } from '@/lib/websocket-manager';
 import { prisma } from '@/lib/db';
+import { getRedisClient } from '@/lib/redis';
 
 // Store WebSocket server instance
 let wss: WebSocketServer | null = null;
@@ -99,6 +100,26 @@ export async function POST(request: NextRequest) {
         content,
       },
     });
+
+    // Publish to Redis for real-time delivery via SSE
+    try {
+      const redis = getRedisClient();
+      const channelKey = `chat:${messageId}`;
+      await redis.publish(channelKey, JSON.stringify({
+        type: 'new_reply',
+        timestamp: Date.now(),
+        sender: type,
+        reply: {
+          id: reply.id,
+          sender: reply.sender,
+          content: reply.content,
+          createdAt: reply.createdAt,
+        },
+      }));
+    } catch (redisError) {
+      console.error('[WS Poll] Redis publish error:', redisError);
+      // Continue even if Redis fails - message is in database
+    }
 
     // Update message status and activity
     await prisma.customerMessage.update({
