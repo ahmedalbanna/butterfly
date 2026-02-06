@@ -50,7 +50,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsLoading(true);
-    
+
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const data = await searchProducts(searchQuery);

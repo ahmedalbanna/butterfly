@@ -30,7 +30,7 @@ export async function aiStylistChat(input: AIStylistChatInput): Promise<string> 
 
   // Fetch available products to make AI product-aware
   const products = await getProducts();
-  const productContext = products.map(p => 
+  const productContext = products.map(p =>
     `${p.name} (${p.category}) - $${p.price}: ${p.description.substring(0, 100)}...`
   ).join('\n');
 

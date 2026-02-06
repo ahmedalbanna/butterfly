@@ -18,7 +18,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
   const { slug } = use(params);
   const { addToCart } = useCart();
   const { toast } = useToast();
-  
+
   const [category, setCategory] = useState<Category | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -105,8 +105,8 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
       <main className="relative max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24 space-y-20">
         {/* Hero Section */}
         <header className="max-w-3xl space-y-6">
-          
-        <div className="flex items-center gap-6">
+
+          <div className="flex items-center gap-6">
             <Link href="/" className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/40 hover:text-primary transition-colors flex items-center gap-2">
               <ArrowLeft className="w-3 h-3" /> Back to Home
             </Link>
@@ -134,21 +134,21 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
             </div>
           ) : (
             products.map((product, idx) => (
-              <div 
-                key={product.id} 
+              <div
+                key={product.id}
                 className="group relative flex flex-col bg-white/[0.02] border border-white/5 hover:border-primary/20 transition-all duration-700 animate-in fade-in slide-in-from-bottom-4"
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
                 {/* Visual Asset */}
                 <div className="relative aspect-[4/5] w-full overflow-hidden bg-neutral-900">
-                  <Image 
-                    src={product.image} 
-                    alt={product.name} 
-                    fill 
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
                     className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                  
+
                   {product.featured && (
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-primary text-black rounded-none uppercase text-[8px] tracking-widest font-bold border-none">
@@ -158,7 +158,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                   )}
 
                   <div className="absolute bottom-6 left-6 right-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                    <Button 
+                    <Button
                       onClick={() => handleAddToCart(product)}
                       className="w-full h-12 bg-primary text-white hover:bg-white hover:text-primary rounded-none uppercase tracking-widest text-[10px] font-bold shadow-2xl"
                     >
@@ -179,7 +179,7 @@ export default function CategoryPage({ params }: { params: Promise<{ slug: strin
                     <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 font-bold mb-4">{product.materials}</p>
                     <p className="text-sm text-white/60 line-clamp-2 italic font-light">{product.description}</p>
                   </div>
-                  
+
                   <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                     <span className="text-[8px] uppercase tracking-[0.3em] text-white/20 font-bold">Ref. Piece #{product.id.slice(-6).toUpperCase()}</span>
                     <ChevronRight className="w-4 h-4 text-primary/40 group-hover:text-primary group-hover:translate-x-1 transition-all" />
