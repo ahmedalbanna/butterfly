@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link';
-import { Mail } from 'lucide-react';
+import { Mail, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ButterflyLogo } from '@/components/butterfly-logo';
 
@@ -18,12 +18,20 @@ export function Navbar() {
           </h1>
         </Link>
         
-        <Link href="/contact">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Mail className="h-4 w-4" />
-            Contact Us
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/custom-order">
+            <Button variant="outline" size="sm" className="gap-2 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10">
+              <Sparkles className="h-4 w-4" />
+              Custom Order
+            </Button>
+          </Link>
+          <Link href="/contact">
+            <Button variant="outline" size="sm" className="gap-2">
+              <Mail className="h-4 w-4" />
+              Contact Us
+            </Button>
+          </Link>
+        </div>
       </div>
     </nav>
   );

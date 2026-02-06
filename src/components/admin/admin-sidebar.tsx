@@ -20,6 +20,9 @@ import { useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { getPendingCustomOrdersCount } from '@/app/actions/custom-orders';
 
 const navigation = [
   {
@@ -35,7 +38,8 @@ const navigation = [
   {
     name: 'Orders History',
     href: '/admin/orders',
-    icon: ShoppingCart
+    icon: ShoppingCart,
+    showBadge: true
   },
   {
     name: 'Live Chat',
@@ -69,6 +73,19 @@ export function AdminSidebar() {
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [pendingCustomOrders, setPendingCustomOrders] = useState(0);
+
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      const count = await getPendingCustomOrdersCount();
+      setPendingCustomOrders(count);
+    };
+    loadPendingCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(loadPendingCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -133,7 +150,12 @@ export function AdminSidebar() {
                 "w-5 h-5 transition-transform duration-500 group-hover:scale-110",
                 isActive && "drop-shadow-[0_0_8px_rgba(var(--primary),0.6)]"
               )} />
-              <span className="font-headline text-lg italic tracking-wide">{item.name}</span>
+              <span className="font-headline text-lg italic tracking-wide flex-1">{item.name}</span>
+              {item.showBadge && pendingCustomOrders > 0 && (
+                <Badge className="bg-yellow-500 text-black text-xs px-2 py-0.5">
+                  {pendingCustomOrders}
+                </Badge>
+              )}
             </Link>
           );
         })}

@@ -65,6 +65,7 @@ model User {
   orders       Order[]
   cart         Cart?
   chatSessions ChatSession[]
+  customOrders CustomOrder[]
 }
 
 // Shopping Cart
@@ -108,8 +109,9 @@ model Order {
   updatedAt       DateTime    @updatedAt
 
   // Relations
-  items    OrderItem[]
-  messages CustomerMessage[]
+  items       OrderItem[]
+  messages    CustomerMessage[]
+  customOrder CustomOrder?
 
   @@index([userId])
   @@index([status])
@@ -238,5 +240,34 @@ model SocialMediaPost {
   @@index([productId])
   @@index([platform])
   @@index([status])
+  @@index([createdAt])
+}
+
+// Custom-Made Accessory Orders
+model CustomOrder {
+  id              String    @id @default(cuid())
+  customerId      String?   // Links to User if authenticated
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  description     String    @db.Text // Customer's description of what they want
+  referenceImages String[]  // Array of uploaded image URLs
+  status          String    @default("pending") // pending, quoted, approved, in_production, completed, cancelled
+  quotedPrice     Float?    // Admin's quoted price
+  quoteNotes      String?   @db.Text // Admin notes on the quote
+  quotedAt        DateTime?
+  approvedAt      DateTime?
+  completedAt     DateTime?
+  orderId         String?   @unique // Links to final Order when approved
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  user  User?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  order Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  
+  @@index([customerId])
+  @@index([status])
+  @@index([customerEmail])
   @@index([createdAt])
 }
