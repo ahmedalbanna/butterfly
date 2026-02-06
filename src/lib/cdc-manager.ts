@@ -1,6 +1,7 @@
 import { getCDCListener } from './cdc-listener';
 import { warmCache, clearAllCache } from './redis-cache';
 import { closeRedis } from './redis';
+import { scheduleCacheWarming } from './cache-warming';
 
 /**
  * CDC Manager - Coordinates startup and shutdown of the CDC system
@@ -9,6 +10,7 @@ import { closeRedis } from './redis';
 
 let isInitialized = false;
 let shutdownInProgress = false;
+let warmingSchedule: NodeJS.Timer | null = null;
 
 /**
  * Initialize the CDC system
@@ -30,7 +32,10 @@ export async function initializeCDC(): Promise<void> {
     // 2. Warm cache with frequently accessed data
     await warmCache();
 
-    // 3. Register shutdown handlers
+    // 3. Schedule automatic cache warming every 60 minutes
+    warmingSchedule = scheduleCacheWarming(60);
+
+    // 4. Register shutdown handlers
     registerShutdownHandlers();
 
     isInitialized = true;
@@ -59,11 +64,17 @@ export async function shutdownCDC(): Promise<void> {
     shutdownInProgress = true;
     console.log('[CDC Manager] Shutting down CDC system...');
 
-    // 1. Stop CDC listener
+    // 1. Stop cache warming schedule
+    if (warmingSchedule) {
+      clearInterval(warmingSchedule);
+      warmingSchedule = null;
+    }
+
+    // 2. Stop CDC listener
     const cdcListener = getCDCListener();
     await cdcListener.stop();
 
-    // 2. Close Redis connections
+    // 3. Close Redis connections
     await closeRedis();
 
     isInitialized = false;

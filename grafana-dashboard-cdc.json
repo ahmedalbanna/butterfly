@@ -1,0 +1,369 @@
+{
+  "dashboard": {
+    "title": "Butterfly Store - CDC System Monitoring",
+    "description": "Comprehensive monitoring dashboard for Change Data Capture system",
+    "tags": ["cdc", "redis", "postgresql", "cache", "real-time"],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "refresh": "5s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "CDC System Health",
+        "type": "stat",
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "cdc_listener_active",
+            "legendFormat": "CDC Listener"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "text": { "titleSize": 16, "valueSize": 48 }
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "green", "value": 1 }
+              ]
+            },
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "DOWN" }, "1": { "text": "UP" } } }
+            ]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Redis Connection",
+        "type": "stat",
+        "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "redis_connected",
+            "legendFormat": "Redis"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "green", "value": 1 }
+              ]
+            },
+            "mappings": [
+              { "type": "value", "options": { "0": { "text": "DISCONNECTED" }, "1": { "text": "CONNECTED" } } }
+            ]
+          }
+        }
+      },
+      {
+        "id": 3,
+        "title": "Active Real-Time Connections",
+        "type": "stat",
+        "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "realtime_connections_active",
+            "legendFormat": "Connections"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "color": { "mode": "thresholds" },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "green", "value": 0 },
+                { "color": "yellow", "value": 50 },
+                { "color": "red", "value": 100 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Cache Keys Total",
+        "type": "stat",
+        "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+        "targets": [
+          {
+            "expr": "cache_keys_total",
+            "legendFormat": "Keys"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "CDC Events Rate (by Operation)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(cdc_events_total{operation=\"INSERT\"}[5m])",
+            "legendFormat": "INSERT"
+          },
+          {
+            "expr": "rate(cdc_events_total{operation=\"UPDATE\"}[5m])",
+            "legendFormat": "UPDATE"
+          },
+          {
+            "expr": "rate(cdc_events_total{operation=\"DELETE\"}[5m])",
+            "legendFormat": "DELETE"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Events/sec" }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true
+        }
+      },
+      {
+        "id": 6,
+        "title": "CDC Events by Table",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "rate(cdc_events_total[5m])",
+            "legendFormat": "{{table}}"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Events/sec" }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true
+        }
+      },
+      {
+        "id": 7,
+        "title": "Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": { "x": 0, "y": 12, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(cache_operations_total{operation=\"hit\"}[5m]) / (rate(cache_operations_total{operation=\"hit\"}[5m]) + rate(cache_operations_total{operation=\"miss\"}[5m])) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                { "color": "red", "value": 0 },
+                { "color": "yellow", "value": 50 },
+                { "color": "green", "value": 80 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Cache Operations",
+        "type": "graph",
+        "gridPos": { "x": 8, "y": 12, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(cache_operations_total{operation=\"hit\"}[5m])",
+            "legendFormat": "Hits"
+          },
+          {
+            "expr": "rate(cache_operations_total{operation=\"miss\"}[5m])",
+            "legendFormat": "Misses"
+          },
+          {
+            "expr": "rate(cache_operations_total{operation=\"set\"}[5m])",
+            "legendFormat": "Sets"
+          },
+          {
+            "expr": "rate(cache_operations_total{operation=\"invalidate\"}[5m])",
+            "legendFormat": "Invalidations"
+          }
+        ],
+        "yaxes": [
+          { "format": "ops", "label": "Operations/sec" }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Cache Memory Usage",
+        "type": "graph",
+        "gridPos": { "x": 16, "y": 12, "w": 8, "h": 6 },
+        "targets": [
+          {
+            "expr": "cache_memory_bytes",
+            "legendFormat": "Memory"
+          }
+        ],
+        "yaxes": [
+          { "format": "bytes", "label": "Memory" }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Cache Operation Latency (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, rate(cache_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p50"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(cache_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(cache_operation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99"
+          }
+        ],
+        "yaxes": [
+          { "format": "s", "label": "Latency" }
+        ],
+        "legend": {
+          "show": true,
+          "alignAsTable": true,
+          "avg": true,
+          "current": true
+        }
+      },
+      {
+        "id": 11,
+        "title": "Database Query Latency (p95)",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m]))",
+            "legendFormat": "{{query}}"
+          }
+        ],
+        "yaxes": [
+          { "format": "s", "label": "Latency" }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Real-Time Connections (Connect/Disconnect)",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 26, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(realtime_connections_total{action=\"connect\"}[5m])",
+            "legendFormat": "Connects"
+          },
+          {
+            "expr": "rate(realtime_connections_total{action=\"disconnect\"}[5m])",
+            "legendFormat": "Disconnects"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Connections/sec" }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "CDC Alerts by Level",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 26, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(cdc_alerts_total{level=\"critical\"}[5m])",
+            "legendFormat": "Critical"
+          },
+          {
+            "expr": "rate(cdc_alerts_total{level=\"error\"}[5m])",
+            "legendFormat": "Error"
+          },
+          {
+            "expr": "rate(cdc_alerts_total{level=\"warning\"}[5m])",
+            "legendFormat": "Warning"
+          },
+          {
+            "expr": "rate(cdc_alerts_total{level=\"info\"}[5m])",
+            "legendFormat": "Info"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Alerts/sec" }
+        ]
+      },
+      {
+        "id": 14,
+        "title": "Cache Warming Duration",
+        "type": "graph",
+        "gridPos": { "x": 0, "y": 32, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "cache_warming_duration_seconds_sum / cache_warming_duration_seconds_count",
+            "legendFormat": "{{strategy}}"
+          }
+        ],
+        "yaxes": [
+          { "format": "s", "label": "Duration" }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Cache Warming Items",
+        "type": "graph",
+        "gridPos": { "x": 12, "y": 32, "w": 12, "h": 6 },
+        "targets": [
+          {
+            "expr": "rate(cache_warming_items_total[5m])",
+            "legendFormat": "{{strategy}}"
+          }
+        ],
+        "yaxes": [
+          { "format": "short", "label": "Items/sec" }
+        ]
+      }
+    ]
+  }
+}

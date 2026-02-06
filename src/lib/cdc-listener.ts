@@ -23,6 +23,10 @@ import {
   alertCDCReconnecting,
   alertSystemHealthy,
 } from './cdc-alerts';
+import {
+  recordCDCEvent,
+  setCDCListenerStatus,
+} from './metrics';
 
 /**
  * CDC Listener Service
@@ -81,6 +85,9 @@ class CDCListener {
       this.reconnectAttempts = 0;
       console.log('[CDC] Listener started successfully');
       
+      // Update metrics
+      setCDCListenerStatus(true);
+      
       // Send healthy alert
       await alertSystemHealthy();
     } catch (error) {
@@ -122,6 +129,9 @@ class CDCListener {
       const event: CDCEvent = JSON.parse(msg.payload);
       
       console.log(`[CDC] Event: ${event.operation} on ${event.table} (id: ${event.new?.id || event.old?.id})`);
+
+      // Record CDC event metric
+      recordCDCEvent(event.operation, event.table);
 
       // Process based on table
       await this.processCDCEvent(event);
@@ -355,6 +365,7 @@ class CDCListener {
    */
   private handleDisconnect(): void {
     this.isListening = false;
+    setCDCListenerStatus(false);
 
     if (this.client) {
       try {

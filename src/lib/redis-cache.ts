@@ -54,8 +54,15 @@ export const CACHE_KEYS = {
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
   try {
+    const startTime = Date.now();
     const redis = getRedisClient();
     const cached = await redis.get(key);
+    const duration = Date.now() - startTime;
+    
+    // Record metrics
+    const { recordCacheOperation, recordCacheLatency } = await import('./metrics');
+    recordCacheOperation(cached ? 'hit' : 'miss', key.split(':')[1] || 'unknown');
+    recordCacheLatency('get', duration);
     
     if (!cached) return null;
     
@@ -68,10 +75,17 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
 
 export async function cacheSet<T>(key: string, value: T, ttl: number): Promise<boolean> {
   try {
+    const startTime = Date.now();
     const redis = getRedisClient();
     const serialized = JSON.stringify(value);
     
     await redis.setex(key, ttl, serialized);
+    const duration = Date.now() - startTime;
+    
+    // Record metrics
+    const { recordCacheOperation, recordCacheLatency } = await import('./metrics');
+    recordCacheOperation('set', key.split(':')[1] || 'unknown');
+    recordCacheLatency('set', duration);
     
     return true;
   } catch (error) {
@@ -84,6 +98,10 @@ export async function cacheInvalidate(key: string): Promise<boolean> {
   try {
     const redis = getRedisClient();
     await redis.del(key);
+    
+    // Record metrics
+    const { recordCacheOperation } = await import('./metrics');
+    recordCacheOperation('invalidate', key.split(':')[1] || 'unknown');
     
     console.log(`[Cache] Invalidated: ${key}`);
     return true;
@@ -318,8 +336,10 @@ export async function warmCache(): Promise<void> {
   console.log('[Cache] Warming cache with frequently accessed data...');
   
   try {
-    // This will be called by the CDC manager on startup
-    // We'll populate it with common queries after implementing CDC listener
+    // Use intelligent cache warming system
+    const { getCacheWarmer } = await import('./cache-warming');
+    const warmer = getCacheWarmer();
+    await warmer.warmAll();
     console.log('[Cache] Cache warming complete');
   } catch (error) {
     console.error('[Cache] Cache warming error:', error);

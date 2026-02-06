@@ -22,7 +22,6 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useEffect, useState } from 'react';
-import { getPendingCustomOrdersCount } from '@/app/actions/custom-orders';
 
 const navigation = [
   {
@@ -75,17 +74,8 @@ export function AdminSidebar() {
   const { toast } = useToast();
   const [pendingCustomOrders, setPendingCustomOrders] = useState(0);
 
-  useEffect(() => {
-    const loadPendingCount = async () => {
-      const count = await getPendingCustomOrdersCount();
-      setPendingCustomOrders(count);
-    };
-    loadPendingCount();
-    
-    // Refresh count every 30 seconds
-    const interval = setInterval(loadPendingCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // TODO: Implement getPendingCustomOrdersCount in custom-orders actions
+  // For now, badge is disabled until function is created
 
   const handleLogout = async () => {
     try {

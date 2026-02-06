@@ -1,0 +1,46 @@
+# Prometheus configuration for Butterfly Store CDC monitoring
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'butterfly-store'
+    environment: 'production'
+
+# Scrape configurations
+scrape_configs:
+  # Butterfly Store CDC Metrics
+  - job_name: 'butterfly-cdc'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9002']
+        labels:
+          app: 'butterfly-store'
+          component: 'cdc-system'
+    metrics_path: '/api/metrics'
+    
+  # Optional: Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['localhost:9121']
+        labels:
+          app: 'butterfly-store'
+          component: 'redis'
+    
+  # Optional: PostgreSQL Exporter
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['localhost:9187']
+        labels:
+          app: 'butterfly-store'
+          component: 'postgresql'
+
+# Alerting rules
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+
+# Load alerting rules
+rule_files:
+  - 'alerts.yml'
