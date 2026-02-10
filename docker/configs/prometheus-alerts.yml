@@ -1,0 +1,119 @@
+# Prometheus alerting rules for Butterfly Store CDC
+
+groups:
+  - name: cdc_alerts
+    interval: 30s
+    rules:
+      # CDC Listener Down
+      - alert: CDCListenerDown
+        expr: cdc_listener_active == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cdc-listener
+        annotations:
+          summary: "CDC Listener is down"
+          description: "The CDC listener has been inactive for more than 1 minute. Real-time data synchronization is not working."
+      
+      # Redis Connection Lost
+      - alert: RedisDisconnected
+        expr: redis_connected == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: redis
+        annotations:
+          summary: "Redis connection lost"
+          description: "Redis connection has been lost. Cache operations are failing."
+      
+      # Low Cache Hit Rate
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            rate(cache_operations_total{operation="hit"}[5m]) / 
+            (rate(cache_operations_total{operation="hit"}[5m]) + rate(cache_operations_total{operation="miss"}[5m]))
+          ) * 100 < 60
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Cache hit rate below 60%"
+          description: "Cache hit rate is {{ $value | humanize }}%. Consider warming the cache or adjusting TTL values."
+      
+      # High Cache Memory Usage
+      - alert: HighCacheMemory
+        expr: cache_memory_bytes > 500000000  # 500MB
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High cache memory usage"
+          description: "Cache memory usage is {{ $value | humanize }} bytes. Consider clearing old data or increasing Redis memory limit."
+      
+      # High Cache Operation Latency
+      - alert: HighCacheLatency
+        expr: histogram_quantile(0.95, rate(cache_operation_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "High cache operation latency"
+          description: "95th percentile cache operation latency is {{ $value | humanizeDuration }}. Cache operations are slow."
+      
+      # High Database Query Latency
+      - alert: HighDatabaseLatency
+        expr: histogram_quantile(0.95, rate(database_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High database query latency"
+          description: "95th percentile database query latency is {{ $value | humanizeDuration }}. Database queries are slow."
+      
+      # Excessive CDC Events
+      - alert: ExcessiveCDCEvents
+        expr: rate(cdc_events_total[5m]) > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: cdc
+        annotations:
+          summary: "Excessive CDC events"
+          description: "CDC event rate is {{ $value | humanize }} events/sec. Unusual database activity detected."
+      
+      # Too Many Real-Time Connections
+      - alert: HighRealtimeConnections
+        expr: realtime_connections_active > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: realtime
+        annotations:
+          summary: "High number of real-time connections"
+          description: "{{ $value }} active real-time connections. Server may be under heavy load."
+      
+      # Frequent CDC Alerts
+      - alert: FrequentCDCAlerts
+        expr: rate(cdc_alerts_total{level=~"error|critical"}[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: cdc
+        annotations:
+          summary: "Frequent CDC system alerts"
+          description: "CDC system is generating {{ $value | humanize }} critical/error alerts per second."
+      
+      # Cache Warming Failures
+      - alert: CacheWarmingSlowness
+        expr: cache_warming_duration_seconds_sum / cache_warming_duration_seconds_count > 60
+        for: 5m
+        labels:
+          severity: warning
+          component: cache-warming
+        annotations:
+          summary: "Slow cache warming"
+          description: "Cache warming is taking {{ $value | humanizeDuration }} on average. Performance may be degraded."
