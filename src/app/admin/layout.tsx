@@ -1,8 +1,7 @@
 'use client';
 
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useAuth, useCurrentUser } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { useEffect, useState } from 'react';
 import { Loader2, ShieldAlert, ArrowLeft } from 'lucide-react';
@@ -14,38 +13,30 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isUserLoading } = useUser();
+  const { isLoading: authLoading } = useAuth();
+  const user = useCurrentUser();
   const router = useRouter();
-  const firestore = useFirestore();
-  
-  // Memoize the document reference to prevent infinite re-renders
-  const userDocRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user?.uid, firestore]);
-
-  const { data: userData, isLoading: isDataLoading } = useDoc(userDocRef);
 
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Only proceed once both auth and data loading are finished
-    if (!isUserLoading && !isDataLoading) {
+    // Only proceed once auth loading is finished
+    if (!authLoading) {
       if (!user) {
         // No user found, redirect to login
         router.push('/login?redirect=/admin');
-      } else if (userData && userData.isAdmin === true) {
+      } else if (user.isAdmin === true) {
         // User is an admin, grant access
         setIsAuthorized(true);
       } else {
-        // User is authenticated but NOT an admin (or doc missing)
+        // User is authenticated but NOT an admin
         setIsAuthorized(false);
       }
     }
-  }, [user, isUserLoading, userData, isDataLoading, router]);
+  }, [user, authLoading, router]);
 
   // 1. Initial Loading Screen
-  if (isUserLoading || isDataLoading || isAuthorized === null) {
+  if (authLoading || isAuthorized === null) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-black text-white">
         <div className="relative">

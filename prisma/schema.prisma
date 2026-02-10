@@ -53,19 +53,50 @@ model Product {
   @@index([featured])
 }
 
-// Users (prepared for future authentication)
+// Users with PostgreSQL authentication
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  email                 String   @unique
+  name                  String?
+  password              String   // Hashed password for PostgreSQL auth
+  lastPasswordChange    DateTime? // Track when password was last changed
+  isAdmin               Boolean  @default(false) // Role management
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   // Relations
   orders       Order[]
   cart         Cart?
   chatSessions ChatSession[]
   customOrders CustomOrder[]
+  sessions     Session[]
+  passwordResets PasswordReset[]
+}
+
+// Session model for JWT token tracking
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Password Reset Tokens
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Shopping Cart

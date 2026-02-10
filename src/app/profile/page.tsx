@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, useUser, useDoc } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { doc } from 'firebase/firestore';
+import { useAuth, useCurrentUser } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -28,8 +26,8 @@ import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
+  const { isLoading, logout } = useAuth();
+  const user = useCurrentUser();
   const { toast } = useToast();
   
   const [customerOrders, setCustomerOrders] = useState<OrderWithItems[]>([]);
@@ -37,10 +35,10 @@ export default function ProfilePage() {
 
   // Protected route logic
   useEffect(() => {
-    if (!isUserLoading && !user) {
+    if (!isLoading && !user) {
       router.push('/login');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isLoading, router]);
 
   // Load orders from localStorage IDs
   useEffect(() => {
@@ -64,7 +62,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast({
         title: "Signed Out",
         description: "Your session has been securely closed.",

@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth, useUser, useFirestore } from '@/firebase';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +11,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { ButterflyLogo } from '@/components/butterfly-logo';
 import { Loader2, ArrowRight } from 'lucide-react';
-import { syncUserToDb } from '@/app/actions/users';
 
 export default function SignupPage() {
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isLoading: authLoading, register } = useAuth();
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
@@ -28,10 +23,10 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (!authLoading && user) {
       router.push('/');
     }
-  }, [user, isUserLoading, router]);
+  }, [user, authLoading, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,25 +42,7 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const newUser = userCredential.user;
-
-      // 1. Create user profile in Firestore (for roles/auth)
-      await setDoc(doc(firestore, 'users', newUser.uid), {
-        id: newUser.uid,
-        email: email,
-        isAdmin: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
-
-      // 2. Mirror user in PostgreSQL (for Contacts/CRM)
-      await syncUserToDb({
-        id: newUser.uid,
-        email: email,
-        name: email.split('@')[0], // Default name from email
-      });
-
+      await register(email, password, email.split('@')[0]);
       toast({
         title: "Account Created",
         description: "Welcome to the Butterfly Store family.",
@@ -82,7 +59,7 @@ export default function SignupPage() {
     }
   };
 
-  if (isUserLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />

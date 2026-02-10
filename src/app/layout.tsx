@@ -8,7 +8,7 @@ import {Toaster} from '@/components/ui/toaster';
 import {VoiceCallOverlay} from '@/components/voice-call-overlay';
 import {ChatOverlay} from '@/components/chat-overlay';
 import {SearchOverlay} from '@/components/search-overlay';
-import {FirebaseClientProvider} from '@/firebase/client-provider';
+import {AuthProvider} from '@/context/auth-context';
 
 export const metadata: Metadata = {
   title: 'Butterfly Store | Elegant Accessories',
@@ -28,7 +28,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
-        <FirebaseClientProvider>
+        <AuthProvider>
           <SearchProvider>
             <ChatProvider>
               <VoiceCallProvider>
@@ -42,7 +42,7 @@ export default function RootLayout({
               </VoiceCallProvider>
             </ChatProvider>
           </SearchProvider>
-        </FirebaseClientProvider>
+        </AuthProvider>
       </body>
     </html>
   );

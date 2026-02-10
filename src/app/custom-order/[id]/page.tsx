@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth } from '@/context/auth-context';
 import { getCustomOrderById, approveCustomOrder } from '@/app/actions/custom-orders';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

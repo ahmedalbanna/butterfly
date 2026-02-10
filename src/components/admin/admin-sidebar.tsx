@@ -16,8 +16,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { ButterflyLogo } from '@/components/butterfly-logo';
-import { useAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
+import { useAuth } from '@/context/auth-context';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -69,7 +68,7 @@ const navigation = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const auth = useAuth();
+  const { logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [pendingCustomOrders, setPendingCustomOrders] = useState(0);
@@ -79,7 +78,7 @@ export function AdminSidebar() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast({
         title: "Signed Out",
         description: "Admin session securely closed.",

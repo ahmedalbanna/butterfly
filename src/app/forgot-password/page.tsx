@@ -3,8 +3,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +12,6 @@ import { ButterflyLogo } from '@/components/butterfly-logo';
 import { Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
-  const auth = useAuth();
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
@@ -26,7 +23,16 @@ export default function ForgotPasswordPage() {
     setIsLoading(true);
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send reset email');
+      }
+
       setIsSent(true);
       toast({
         title: "Email Sent",

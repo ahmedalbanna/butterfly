@@ -12,8 +12,7 @@ import { useVoiceCall } from '@/context/voice-call-context';
 import { useChat } from '@/context/chat-context';
 import { useSearch } from '@/context/search-context';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useAuth } from '@/firebase';
-import { signOut } from 'firebase/auth';
+import { useAuth } from '@/context/auth-context';
 import {
   Sheet,
   SheetContent,
@@ -71,15 +70,14 @@ export default function Home() {
   const { openChat } = useChat();
   const { openSearch } = useSearch();
   const { toast } = useToast();
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
   const [activeProductIndices, setActiveProductIndices] = useState<Record<number, number>>({});
   const [sparkles, setSparkles] = useState<SparkleEffect[]>([]);
   const [isZoomed, setIsZoomed] = useState<Record<string, boolean>>({});
   const [groupedProducts, setGroupedProducts] = useState<GroupedProducts[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Track orders
   const [customerOrders, setCustomerOrders] = useState<OrderWithItems[]>([]);
@@ -102,7 +100,7 @@ export default function Home() {
           variant: "destructive"
         });
       } finally {
-        setIsLoading(false);
+        setIsDataLoading(false);
       }
     }
     loadProducts();
@@ -157,10 +155,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && isDataLoading) {
       checkForOrderUpdates();
     }
-  }, [isLoading]);
+  }, [isLoading, isDataLoading]);
 
   const loadCustomerOrders = async () => {
     if (typeof window === 'undefined') return;
@@ -250,7 +248,7 @@ export default function Home() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await logout();
       toast({
         title: "Signed Out",
         description: "You have been successfully logged out.",
@@ -300,7 +298,7 @@ export default function Home() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isDataLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-black text-white">
         <div className="text-center space-y-4">
