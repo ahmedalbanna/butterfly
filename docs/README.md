@@ -22,6 +22,19 @@ Learn about specific LuxeFinds features:
 - **[Test Calls](./features/test-call-implementation.md)** - Test call implementation details
 - **[n8n Integration](./features/n8n-integration.md)** - Workflow automation with n8n
 
+### Authentication Documentation
+PostgreSQL authentication system (replaces Firebase):
+
+- **[Quick Start (5 min)](./authentication/quick-start.md)** - Get authentication running in 5 minutes
+- **[Setup Instructions](./authentication/setup.md)** - Complete authentication setup
+- **[Authentication System](./authentication/auth-system.md)** - System overview
+- **[PostgreSQL Auth Migration](./authentication/postgresql-auth.md)** - Technical details
+- **[Testing Guide](./authentication/testing.md)** - Test cases and verification
+- **[Deployment Guide](./authentication/deployment.md)** - Production deployment
+- **[Firebase Migration](./authentication/firebase-removal.md)** - Firebase to PostgreSQL migration
+- **[Database Manager](./authentication/db-manager.md)** - Database management tools
+- **[Implementation Checklist](./authentication/checklist.md)** - Implementation verification
+
 ### Architecture & Design
 Deep dive into system architecture:
 
@@ -77,6 +90,18 @@ docs/
 │   ├── checkout.md                   # Payment & checkout
 │   ├── test-call-implementation.md   # Test calls
 │   └── n8n-integration.md            # Workflow automation
+│
+├── authentication/                    # PostgreSQL authentication
+│   ├── README.md                     # Auth documentation index
+│   ├── quick-start.md                # 5-minute quickstart
+│   ├── setup.md                      # Complete setup guide
+│   ├── auth-system.md                # System overview
+│   ├── postgresql-auth.md            # Technical migration details
+│   ├── testing.md                    # Testing & verification
+│   ├── deployment.md                 # Production deployment
+│   ├── firebase-removal.md           # Firebase migration
+│   ├── db-manager.md                 # Database management
+│   └── checklist.md                  # Implementation checklist
 │
 ├── architecture/                      # System design
 │   ├── system-architecture.md        # Overall design
