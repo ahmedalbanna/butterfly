@@ -64,7 +64,10 @@ For full e-commerce functionality including order persistence, cart sync, chat h
 - Password: `luxefinds_secure_pass_2026`
 - Database: `luxefinds`
 
-See [`DOCKER_DATABASE.md`](./DOCKER_DATABASE.md) for Docker commands and [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for alternative setups.
+For detailed setup instructions, see the **[Getting Started Guide](./docs/setup/getting-started.md)** which covers all setup options including:
+- Basic setup without database
+- Full setup with PostgreSQL and Redis
+- AI Product Creator with Ollama
 
 ### AI Product Creator Setup (Optional)
 
@@ -86,7 +89,7 @@ To enable the AI-powered product creation feature for admins:
    - AI will generate name, description, category, and price suggestions
    - Complete remaining fields and save
 
-See [`OLLAMA_SETUP.md`](./OLLAMA_SETUP.md) for detailed setup instructions and [`AI_PRODUCT_CREATOR.md`](./AI_PRODUCT_CREATOR.md) for feature documentation.
+See **[AI Setup Guide](./docs/setup/ai-setup.md)** for detailed setup instructions and **[AI Product Creator](./docs/features/ai-product-creator.md)** for feature documentation.
 
 ## 📂 Project Structure
 
@@ -107,7 +110,7 @@ LuxeFinds uses **PostgreSQL** with **Prisma ORM** for:
 - Shopping cart persistence
 - AI chat history
 
-The app gracefully falls back to hardcoded data if no database is configured. See [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for setup instructions.
+The app gracefully falls back to hardcoded data if no database is configured. See **[Docker Setup Guide](./docs/setup/docker-setup.md)** for detailed database instructions.
 
 ### Redis
 **Redis** is used for:
@@ -122,4 +125,4 @@ The app gracefully falls back to hardcoded data if no database is configured. Se
 - ✅ Real-time delivery (no polling delays)
 - ✅ Production-ready architecture
 
-See [`REDIS_SIGNALING.md`](./REDIS_SIGNALING.md) for detailed implementation and [`VOICE_CALL_QUICK_START.md`](./VOICE_CALL_QUICK_START.md#-redis-signaling-setup) for quick setup.
+See **[Redis Setup Guide](./docs/setup/redis-setup.md)** for detailed implementation and **[Voice Calls](./docs/features/voice-calls.md)** for quick setup.
