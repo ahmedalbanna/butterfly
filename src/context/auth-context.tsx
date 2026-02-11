@@ -11,6 +11,7 @@ import React, {
 } from 'react';
 
 export interface AuthUser {
+  creationAt: any;
   id: string;
   email: string;
   name: string | null;
@@ -21,10 +22,11 @@ export interface AuthContextState {
   user: AuthUser | null;
   isLoading: boolean;
   error: Error | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  refreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
@@ -64,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
     setIsLoading(true);
     setError(null);
 
@@ -82,6 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const { user: userData } = await response.json();
       setUser(userData);
+      return userData;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Login failed');
       setError(error);
@@ -156,6 +159,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
+  const refreshToken = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const { user: userData } = await response.json();
+        setUser(userData);
+        return true;
+      } else {
+        // Refresh failed, user needs to login again
+        setUser(null);
+        return false;
+      }
+    } catch (err) {
+      console.error('Failed to refresh token:', err);
+      setUser(null);
+      return false;
+    }
+  }, []);
+
   const contextValue = useMemo<AuthContextState>(
     () => ({
       user,
@@ -165,8 +190,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       register,
       logout,
       refreshUser,
+      refreshToken,
     }),
-    [user, isLoading, error, login, register, logout, refreshUser]
+    [user, isLoading, error, login, register, logout, refreshUser, refreshToken]
   );
 
   return (

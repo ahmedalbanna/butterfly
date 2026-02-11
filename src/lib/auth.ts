@@ -1,10 +1,17 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { getRedisClient } from './redis';
 
+// Validate JWT_SECRET in production
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = '7d';
-const REFRESH_TOKEN_EXPIRES_IN = '30d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
+
+// Validate JWT_SECRET on startup in production
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your-secret-key-change-in-production')) {
+  throw new Error('JWT_SECRET must be set to a secure random value in production. Generate one with: openssl rand -base64 32');
+}
 
 export interface JWTPayload {
   userId: string;
@@ -113,5 +120,48 @@ export async function getRefreshToken(): Promise<string | undefined> {
 export async function getCurrentUser(): Promise<JWTPayload | null> {
   const token = await getAccessToken();
   if (!token) return null;
+  
+  // Check if token is blacklisted
+  const isBlacklisted = await isTokenBlacklisted(token);
+  if (isBlacklisted) return null;
+  
   return verifyJWT(token);
+}
+
+/**
+ * Blacklist a token (for logout or revocation)
+ * Stores token in Redis with TTL matching token expiration
+ */
+export async function blacklistToken(token: string): Promise<void> {
+  try {
+    const decoded = verifyJWT(token);
+    if (!decoded || !decoded.exp) return;
+    
+    // Calculate remaining TTL
+    const now = Math.floor(Date.now() / 1000);
+    const ttl = decoded.exp - now;
+    
+    // Only blacklist if token hasn't expired yet
+    if (ttl > 0) {
+      const redis = getRedisClient();
+      await redis.set(`token:blacklist:${token}`, '1', 'EX', ttl);
+    }
+  } catch (error) {
+    console.error('[Auth] Failed to blacklist token:', error);
+  }
+}
+
+/**
+ * Check if a token is blacklisted
+ */
+export async function isTokenBlacklisted(token: string): Promise<boolean> {
+  try {
+    const redis = getRedisClient();
+    const exists = await redis.exists(`token:blacklist:${token}`);
+    return exists === 1;
+  } catch (error) {
+    console.error('[Auth] Failed to check token blacklist:', error);
+    // Fail open - allow access if Redis is down
+    return false;
+  }
 }

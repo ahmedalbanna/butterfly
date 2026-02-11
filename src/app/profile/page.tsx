@@ -77,7 +77,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (isUserLoading || !user) {
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -145,7 +145,7 @@ export default function ProfilePage() {
                   <p className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Member Since</p>
                   <div className="flex items-center gap-2 text-lg font-light text-white/90">
                     <Calendar className="w-4 h-4 text-primary/60" />
-                    {user.metadata.creationTime ? new Date(user.metadata.creationTime).toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Recently Joined'}
+                    {user.creationAt ? new Date(user.creationAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long' }) : 'Recently Joined'}
                   </div>
                 </div>
 

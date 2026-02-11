@@ -7,17 +7,50 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading, logout } = useAuth();
   const user = useCurrentUser();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  
+  // Idle timeout: 30 minutes (configurable via env)
+  const IDLE_TIMEOUT = parseInt(process.env.NEXT_PUBLIC_SESSION_IDLE_TIMEOUT_MS || '1800000', 10);
+  const WARNING_TIME = 120000; // 2 minutes warning before logout
+
+  // Handle idle timeout - auto logout after inactivity
+  useIdleTimeout({
+    timeout: IDLE_TIMEOUT,
+    enabled: isAuthorized === true, // Only track when admin is authorized
+    onWarning: (remainingTime) => {
+      // Show warning toast 2 minutes before logout
+      toast({
+        title: "Session Timeout Warning",
+        description: `You will be logged out in ${Math.floor(remainingTime / 60000)} minutes due to inactivity.`,
+        variant: "default",
+      });
+    },
+    onIdle: async () => {
+      // Auto-logout on idle timeout
+      toast({
+        title: "Session Expired",
+        description: "You have been logged out due to inactivity.",
+        variant: "destructive",
+      });
+      
+      await logout();
+      router.push('/login?timeout=true');
+    },
+    warningTime: WARNING_TIME,
+  });
 
   useEffect(() => {
     // Only proceed once auth loading is finished

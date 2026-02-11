@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRefreshToken, verifyJWT, createTokens, setAuthCookies } from '@/lib/auth';
+import { getRefreshToken, verifyJWT, createTokens, setAuthCookies, isTokenBlacklisted } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -9,6 +9,15 @@ export async function POST(req: NextRequest) {
     if (!refreshToken) {
       return NextResponse.json(
         { error: 'No refresh token' },
+        { status: 401 }
+      );
+    }
+
+    // Check if refresh token is blacklisted
+    const isBlacklisted = await isTokenBlacklisted(refreshToken);
+    if (isBlacklisted) {
+      return NextResponse.json(
+        { error: 'Refresh token has been revoked' },
         { status: 401 }
       );
     }

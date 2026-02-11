@@ -33,12 +33,18 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      const userData = await login(email, password);
       toast({
         title: "Welcome Back",
         description: "Successfully signed in to your account.",
       });
-      router.push('/');
+      
+      // Redirect admin users to admin dashboard, regular users to home
+      if (userData.isAdmin) {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",
