@@ -84,6 +84,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const { user: userData } = await response.json();
       setUser(userData);
+
+      // Trigger cart refresh by dispatching a custom event
+      // The cart context will listen for this event to reload the cart from database
+      window.dispatchEvent(new CustomEvent('user-logged-in', { detail: { userId: userData.id } }));
+
       return userData;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Login failed');

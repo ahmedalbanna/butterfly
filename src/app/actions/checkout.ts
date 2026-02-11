@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { createOrder, CreateOrderData } from './orders';
+import { clearCart } from './cart';
 
 // Validation schema for checkout form
 const CheckoutFormSchema = z.object({
@@ -26,10 +27,14 @@ export type CartItemForOrder = {
 
 /**
  * Process checkout and create order in database
+ * @param formData - Customer and payment information
+ * @param cartItems - Items being purchased
+ * @param userId - Optional user ID for authenticated users (to clear their database cart)
  */
 export async function processCheckout(
   formData: CheckoutFormData,
-  cartItems: CartItemForOrder[]
+  cartItems: CartItemForOrder[],
+  userId?: string
 ): Promise<{
   success: boolean;
   orderId?: string;
@@ -77,6 +82,15 @@ export async function processCheckout(
       };
     }
 
+    // Clear cart for authenticated user
+    if (userId) {
+      const clearResult = await clearCart(userId);
+      if (!clearResult.success) {
+        console.warn('[processCheckout] Failed to clear cart for user:', userId);
+        // Don't fail the checkout if cart clearing fails - order was already created
+      }
+    }
+
     // Calculate total
     const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -86,7 +100,7 @@ export async function processCheckout(
       total: total
     };
   } catch (error) {
-    console.error('Checkout error:', error);
+    console.error('[processCheckout]', error);
     
     if (error instanceof z.ZodError) {
       return {
