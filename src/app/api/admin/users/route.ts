@@ -15,18 +15,25 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
+    const role = searchParams.get('role') || ''; // 'admin' or 'customer'
 
     const skip = (page - 1) * limit;
 
     // Build search filter
-    const where = search
-      ? {
-          OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { name: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : {};
+    const where: any = {};
+    
+    if (search) {
+      where.OR = [
+        { email: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    
+    if (role === 'admin') {
+      where.isAdmin = true;
+    } else if (role === 'customer') {
+      where.isAdmin = false;
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -39,6 +46,11 @@ export async function GET(req: NextRequest) {
           isLegacyFirebaseUser: true,
           createdAt: true,
           updatedAt: true,
+          _count: {
+            select: {
+              orders: true,
+            },
+          },
         },
         skip,
         take: limit,
@@ -49,7 +61,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
-        users,
+        success: true,
+        data: users,
         pagination: {
           page,
           limit,
@@ -62,7 +75,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('[Admin Users GET]', error);
     return NextResponse.json(
-      { error: 'Failed to fetch users' },
+      { success: false, error: 'Failed to fetch users' },
       { status: 500 }
     );
   }
