@@ -74,12 +74,14 @@ export async function POST(req: NextRequest) {
       isAdmin: user.isAdmin,
     });
 
-    // Set cookies
+    // Set cookies (for web clients)
     await setAuthCookies(accessToken, refreshToken);
 
     // Reset rate limit on successful login
     resetRateLimit(rateLimitKey);
 
+    // Return tokens in response body for mobile clients (Flutter, etc.)
+    // while maintaining cookie-based auth for web clients
     return NextResponse.json(
       {
         success: true,
@@ -89,6 +91,8 @@ export async function POST(req: NextRequest) {
           name: user.name,
           isAdmin: user.isAdmin,
         },
+        accessToken,   // Added for mobile compatibility
+        refreshToken,  // Added for mobile compatibility
       },
       { status: 200 }
     );

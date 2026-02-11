@@ -4,7 +4,10 @@ import { prisma } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const refreshToken = await getRefreshToken();
+    // Accept refresh token from POST body (mobile) or cookies (web)
+    // Priority: body parameter → cookie fallback
+    const body = await req.json().catch(() => ({}));
+    const refreshToken = body.refreshToken || await getRefreshToken();
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -57,9 +60,10 @@ export async function POST(req: NextRequest) {
       isAdmin: user.isAdmin,
     });
 
-    // Set new cookies
+    // Set new cookies (for web clients)
     await setAuthCookies(accessToken, newRefreshToken);
 
+    // Return tokens in response body for mobile clients
     return NextResponse.json(
       {
         success: true,
@@ -69,6 +73,8 @@ export async function POST(req: NextRequest) {
           name: user.name,
           isAdmin: user.isAdmin,
         },
+        accessToken,        // Added for mobile compatibility
+        refreshToken: newRefreshToken,  // Added for mobile compatibility
       },
       { status: 200 }
     );
