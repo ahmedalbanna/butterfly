@@ -82,7 +82,10 @@ export async function getProductById(id: string): Promise<Product | null> {
 
     // Cache miss - fetch from database
     const product = await prisma.product.findUnique({
-      where: { id }
+      where: { id },
+      include: {
+        category: true,
+      }
     });
 
     // Cache the result

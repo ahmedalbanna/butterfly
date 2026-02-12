@@ -48,6 +48,7 @@ model Product {
   orderItems OrderItem[]
   cartItems  CartItem[]
   socialMediaPosts SocialMediaPost[]
+  customerMessages CustomerMessage[]
 
   @@index([categoryId])
   @@index([featured])
@@ -185,6 +186,8 @@ model CustomerMessage {
   subject       String
   message       String         @db.Text
   orderId       String?
+  productId     String?        // For product-specific Q&A messages
+  customerId    String?        // Session/persistent customer ID
   type          String         @default("form") // "form" or "chat"
   isActive      Boolean        @default(false) // For live chat sessions
   status        String         @default("unread") // unread, read, replied, resolved
@@ -194,12 +197,15 @@ model CustomerMessage {
 
   // Relations
   order              Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  product            Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
   replies            MessageReply[]
   activeChatSession  ActiveChatSession?
 
   @@index([status])
   @@index([priority])
   @@index([orderId])
+  @@index([productId])
+  @@index([customerId])
   @@index([createdAt])
   @@index([customerEmail])
   @@index([type])
