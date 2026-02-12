@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 import { getRedisClient } from './redis';
 
 // Validate JWT_SECRET in production
@@ -119,6 +120,62 @@ export async function getRefreshToken(): Promise<string | undefined> {
  */
 export async function getCurrentUser(): Promise<JWTPayload | null> {
   const token = await getAccessToken();
+  if (!token) return null;
+  
+  // Check if token is blacklisted
+  const isBlacklisted = await isTokenBlacklisted(token);
+  if (isBlacklisted) return null;
+  
+  return verifyJWT(token);
+}
+
+/**
+ * Extract JWT token from request - supports both Authorization header and cookies
+ * Priority: Authorization header (Bearer token) > cookies
+ * @param req - NextRequest object
+ * @returns Token string or undefined
+ * @throws Error if Bearer format is malformed
+ */
+export async function getTokenFromRequest(req: NextRequest): Promise<{ token: string | null; error?: string }> {
+  // 1. Try to get token from Authorization header
+  const authHeader = req.headers.get('authorization');
+  
+  if (authHeader) {
+    // Validate Bearer format
+    const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+    
+    if (!bearerMatch) {
+      return {
+        token: null,
+        error: 'Invalid Authorization header format. Use: "Bearer <token>"',
+      };
+    }
+    
+    const headerToken = bearerMatch[1].trim();
+    if (!headerToken) {
+      return {
+        token: null,
+        error: 'Authorization header is missing token after "Bearer"',
+      };
+    }
+    
+    return { token: headerToken };
+  }
+  
+  // 2. Fall back to cookie token
+  const cookieToken = await getAccessToken();
+  
+  return { token: cookieToken || null };
+}
+
+/**
+ * Verify user from token (from either header or cookie)
+ * @param req - NextRequest object
+ * @returns JWT payload or null if invalid/expired/blacklisted
+ */
+export async function verifyUserFromRequest(req: NextRequest): Promise<JWTPayload | null> {
+  const { token } = await getTokenFromRequest(req);
+  
   if (!token) return null;
   
   // Check if token is blacklisted

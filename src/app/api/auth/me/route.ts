@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCurrentUser } from '@/lib/auth';
+import { getTokenFromRequest, verifyUserFromRequest } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
-    const jwtPayload = await getCurrentUser();
+    // Extract token from Authorization header or cookies
+    const { token, error: tokenError } = await getTokenFromRequest(req);
+
+    // Check for malformed Authorization header
+    if (tokenError) {
+      return NextResponse.json(
+        { error: tokenError },
+        { status: 400 }
+      );
+    }
+
+    // Verify user from the extracted token
+    const jwtPayload = await verifyUserFromRequest(req);
 
     if (!jwtPayload) {
       return NextResponse.json(
