@@ -9,9 +9,7 @@ const CheckoutFormSchema = z.object({
   customerName: z.string().min(2, 'Name must be at least 2 characters'),
   customerEmail: z.string().email('Invalid email address'),
   customerPhone: z.string().optional(),
-  shippingAddress: z.string().min(10, 'Please enter a complete address'),
-  billingAddress: z.string().min(10, 'Please enter a complete address'),
-  useSameAddress: z.boolean().optional(),
+  customerAddress: z.string().min(10, 'Please enter a complete address'),
   paymentMethod: z.enum(['bank_transfer', 'credit_card', 'crypto', 'concierge'], {
     required_error: "Please select a payment method",
   }),
@@ -54,16 +52,11 @@ export async function processCheckout(
     }
 
     // Prepare order data
-    const billingAddress = validatedData.useSameAddress 
-      ? validatedData.shippingAddress 
-      : validatedData.billingAddress;
-
     const orderData: CreateOrderData = {
       customerName: validatedData.customerName,
       customerEmail: validatedData.customerEmail,
       customerPhone: validatedData.customerPhone,
-      shippingAddress: validatedData.shippingAddress,
-      billingAddress: billingAddress,
+      customerAddress: validatedData.customerAddress,
       paymentMethod: validatedData.paymentMethod,
       items: cartItems.map(item => ({
         productId: item.id,

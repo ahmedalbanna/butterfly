@@ -204,7 +204,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-primary flex items-center gap-2">
               <MapPin className="w-3 h-3" /> Delivery Destination
             </h3>
-            <p className="text-xl font-headline italic text-white/80 leading-relaxed whitespace-pre-line">{order.shippingAddress}</p>
+            <p className="text-xl font-headline italic text-white/80 leading-relaxed whitespace-pre-line">{order.customerAddress}</p>
             <div className="pt-4 border-t border-white/5">
               <p className="text-[9px] uppercase tracking-widest text-white/20 font-bold mb-1">Contact Channel</p>
               <p className="text-sm font-mono text-white/60">{order.customerPhone || 'Not Provided'}</p>

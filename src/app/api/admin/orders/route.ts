@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
         id: true,
         status: true,
         total: true,
-        shippingAddress: true,
+        customerAddress: true,
         user: {
           select: {
             id: true,

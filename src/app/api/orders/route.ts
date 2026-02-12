@@ -81,8 +81,7 @@ export async function GET(request: NextRequest) {
  * 
  * Body:
  * {
- *   shippingAddress: string (required)
- *   billingAddress: string (required)
+ *   customerAddress: string (required)
  *   customerEmail: string (required)
  *   customerName: string (required)
  *   customerPhone: string (optional)
@@ -93,8 +92,7 @@ export async function POST(request: NextRequest) {
   return withAuth(request, async (user) => {
     try {
       const { 
-        shippingAddress, 
-        billingAddress,
+        customerAddress,
         customerEmail,
         customerName,
         customerPhone,
@@ -102,16 +100,9 @@ export async function POST(request: NextRequest) {
       } = await request.json();
 
       // Validate required fields
-      if (!shippingAddress) {
+      if (!customerAddress) {
         return NextResponse.json(
-          { success: false, error: 'Shipping address is required' },
-          { status: 400 }
-        );
-      }
-
-      if (!billingAddress) {
-        return NextResponse.json(
-          { success: false, error: 'Billing address is required' },
+          { success: false, error: 'Customer address is required' },
           { status: 400 }
         );
       }
@@ -171,8 +162,7 @@ export async function POST(request: NextRequest) {
             userId: user.userId,
             status: 'pending',
             total,
-            shippingAddress,
-            billingAddress,
+            customerAddress,
             customerEmail,
             customerName,
             customerPhone: customerPhone || null,

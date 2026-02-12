@@ -516,7 +516,7 @@ export default function OrdersPage() {
                 <div className="space-y-3">
                   <p className="text-white/20">Logistic Destination</p>
                   <div className="bg-white/[0.03] p-4 border border-white/5">
-                    <p className="text-white/60 font-body leading-relaxed whitespace-pre-wrap">{selectedOrder.shippingAddress}</p>
+                    <p className="text-white/60 font-body leading-relaxed whitespace-pre-wrap">{selectedOrder.customerAddress}</p>
                   </div>
                 </div>
               </div>

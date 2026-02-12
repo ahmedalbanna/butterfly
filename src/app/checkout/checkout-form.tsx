@@ -28,9 +28,7 @@ export function CheckoutForm({ cartItems, cartTotal, onOrderComplete }: Checkout
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    shippingAddress: '',
-    billingAddress: '',
-    useSameAddress: true,
+    customerAddress: '',
     paymentMethod: 'credit_card',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -139,7 +137,7 @@ export function CheckoutForm({ cartItems, cartTotal, onOrderComplete }: Checkout
         </div>
       </div>
 
-      {/* Shipping Address */}
+      {/* Delivery Address */}
       <div className="space-y-6">
         <h3 className="text-xs uppercase tracking-[0.4em] font-bold text-primary">
           II. Delivery Destination
@@ -147,8 +145,8 @@ export function CheckoutForm({ cartItems, cartTotal, onOrderComplete }: Checkout
         
         <div className="space-y-4">
           <Textarea
-            name="shippingAddress"
-            value={formData.shippingAddress}
+            name="customerAddress"
+            value={formData.customerAddress}
             onChange={handleChange}
             placeholder="Street address, city, state, ZIP code"
             required
@@ -156,44 +154,6 @@ export function CheckoutForm({ cartItems, cartTotal, onOrderComplete }: Checkout
             rows={3}
             className="bg-white/5 border-white/10 text-white rounded-none resize-none focus:border-primary/50"
           />
-
-          {/* Billing Address */}
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="useSameAddress"
-              name="useSameAddress"
-              checked={formData.useSameAddress}
-              onCheckedChange={(checked) =>
-                setFormData(prev => ({ ...prev, useSameAddress: checked as boolean }))
-              }
-              disabled={isLoading}
-              className="rounded-none border-primary data-[state=checked]:bg-primary"
-            />
-            <label
-              htmlFor="useSameAddress"
-              className="text-[10px] uppercase tracking-widest text-white/60 cursor-pointer font-bold"
-            >
-              Billing address same as shipping
-            </label>
-          </div>
-
-          {!formData.useSameAddress && (
-            <div className="space-y-2 animate-in fade-in duration-500">
-              <label className="block text-[10px] uppercase tracking-widest text-white/40 font-bold">
-                Billing Address *
-              </label>
-              <Textarea
-                name="billingAddress"
-                value={formData.billingAddress}
-                onChange={handleChange}
-                placeholder="Enter billing address..."
-                required={!formData.useSameAddress}
-                disabled={isLoading}
-                rows={3}
-                className="bg-white/5 border-white/10 text-white rounded-none resize-none focus:border-primary/50"
-              />
-            </div>
-          )}
         </div>
       </div>
 

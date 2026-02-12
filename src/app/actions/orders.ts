@@ -24,8 +24,7 @@ export type CreateOrderData = {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
-  shippingAddress: string;
-  billingAddress: string;
+  customerAddress: string;
   paymentMethod: string;
   items: {
     productId: string;
@@ -95,11 +94,10 @@ export async function createOrder(data: CreateOrderData): Promise<Order | null> 
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
-          shippingAddress: data.shippingAddress,
-          billingAddress: data.billingAddress,
+          customerAddress: data.customerAddress,
           total,
           status: 'pending',
-          // paymentMethod: data.paymentMethod,
+          paymentMethod: data.paymentMethod,
           items: {
             create: data.items.map(item => ({
               productId: item.productId,

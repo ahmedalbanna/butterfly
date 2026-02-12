@@ -130,8 +130,7 @@ model Order {
   user            User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
   status          String      @default("pending") // pending, confirmed, shipped, delivered, cancelled
   total           Float
-  shippingAddress String      @db.Text
-  billingAddress  String      @db.Text
+  customerAddress String      @db.Text
   customerEmail   String
   customerName    String
   customerPhone   String?
