@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getCartForUser, addToCart as dbAddToCart, removeFromCart as dbRemoveFromCart, updateCartQuantity as dbUpdateCartQuantity, clearCart as dbClearCart, syncCart as dbSyncCart } from '@/app/actions/cart';
+import { setIndexedDB, getIndexedDB, STORES } from '@/lib/offline-storage';
 
 export type CartItem = {
   id: string;
@@ -104,7 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     loadCart();
   }, [userId]);
 
-  // Save cart to localStorage or database (debounced)
+  // Save cart to localStorage, IndexedDB, or database (debounced)
   useEffect(() => {
     if (syncTimeoutRef.current) {
       clearTimeout(syncTimeoutRef.current);
@@ -112,23 +113,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     syncTimeoutRef.current = setTimeout(async () => {
       try {
+        // Always save to localStorage for quick access
+        localStorage.setItem('luxefinds_cart', JSON.stringify(cart));
+        
+        // Also save to IndexedDB for offline persistence
+        try {
+          await setIndexedDB(STORES.CACHE, {
+            key: 'cart',
+            data: cart,
+            timestamp: Date.now(),
+          });
+        } catch (err) {
+          console.warn('[Cart] Failed to save to IndexedDB:', err);
+        }
+
         if (userId) {
           // Authenticated user: sync to database
           const cartForSync = cart.map(item => ({ id: item.id, quantity: item.quantity }));
           const result = await dbSyncCart(userId, cartForSync);
           
           if (!result.success) {
-            // If database sync fails, save to localStorage as backup
-            localStorage.setItem('luxefinds_cart', JSON.stringify(cart));
+            console.warn('[Cart] Database sync failed, using local storage');
           }
-        } else {
-          // Guest user: save to localStorage only
-          localStorage.setItem('luxefinds_cart', JSON.stringify(cart));
         }
       } catch (err) {
-        console.error('Error syncing cart:', err);
-        // Fallback to localStorage
-        localStorage.setItem('luxefinds_cart', JSON.stringify(cart));
+        console.error('[Cart] Error syncing cart:', err);
       }
     }, 500);
 

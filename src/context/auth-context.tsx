@@ -52,12 +52,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (response.ok) {
           const { user: userData } = await response.json();
           setUser(userData);
+          // Cache user data for offline access
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('cached_user', JSON.stringify(userData));
+          }
         } else {
           setUser(null);
         }
       } catch (err) {
         console.error('Failed to fetch user:', err);
-        setUser(null);
+        // Try to restore from cache if offline
+        if (typeof window !== 'undefined') {
+          const cachedUser = localStorage.getItem('cached_user');
+          if (cachedUser) {
+            try {
+              setUser(JSON.parse(cachedUser));
+              console.log('[Auth] Using cached user data (offline mode)');
+            } catch (e) {
+              setUser(null);
+            }
+          }
+        }
       } finally {
         setIsLoading(false);
       }
@@ -84,6 +99,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const { user: userData } = await response.json();
       setUser(userData);
+
+      // Cache user data for offline access
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cached_user', JSON.stringify(userData));
+      }
 
       // Trigger cart refresh by dispatching a custom event
       // The cart context will listen for this event to reload the cart from database
