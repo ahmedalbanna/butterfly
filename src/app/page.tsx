@@ -194,6 +194,14 @@ export default function Home() {
         .animate-subtle-zoom {
           animation: subtle-zoom 20s infinite alternate ease-in-out;
         }
+        @media (max-width: 768px) {
+          .animate-subtle-zoom { animation-duration: 30s; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-subtle-zoom { animation: none !important; }
+          .animate-magic-sparkle { animation: none !important; }
+          .transition-content { transition: none !important; }
+        }
         .transition-content {
           transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
         }
@@ -217,11 +225,12 @@ export default function Home() {
               <Button 
                 variant="ghost" 
                 size="icon" 
+                aria-label={`Shopping bag, ${cartCount} items`}
                 className="text-white hover:bg-primary hover:scale-110 rounded-full h-10 w-10 md:h-12 md:w-12 border border-white/20 backdrop-blur-xl transition-all duration-500 bg-black/20"
               >
-                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" />
+                <ShoppingBag className="w-5 h-5 md:w-6 md:h-6" aria-hidden="true" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-in zoom-in ring-2 ring-black">
+                  <span aria-hidden="true" className="absolute -top-1 -right-1 bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-in zoom-in ring-2 ring-black">
                     {cartCount}
                   </span>
                 )}
@@ -261,17 +270,19 @@ export default function Home() {
                           <div className="flex gap-1 md:gap-2">
                             <button 
                               onClick={() => handleInquiry(item.name)}
-                              className="text-white/20 hover:text-primary transition-colors p-1"
+                              aria-label={`Inquire about ${item.name}`}
+                              className="text-white/60 hover:text-primary transition-colors p-1"
                               title="Expert Inquiry"
                             >
-                              <MessageCircle className="w-4 h-4" />
+                              <MessageCircle className="w-4 h-4" aria-hidden="true" />
                             </button>
                             <button 
                               onClick={() => removeFromCart(item.id)}
-                              className="text-white/20 hover:text-destructive transition-colors p-1"
+                              aria-label={`Remove ${item.name} from bag`}
+                              className="text-white/60 hover:text-destructive transition-colors p-1"
                               title="Remove Piece"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" aria-hidden="true" />
                             </button>
                           </div>
                         </div>
@@ -279,17 +290,19 @@ export default function Home() {
                           <div className="flex items-center border border-white/10 rounded-sm bg-white/5 overflow-hidden">
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              aria-label={`Decrease quantity of ${item.name}`}
                               className="p-1.5 hover:bg-white/10 transition-colors disabled:opacity-20"
                               disabled={item.quantity <= 1}
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-3 h-3" aria-hidden="true" />
                             </button>
-                            <span className="w-8 text-center text-xs font-bold font-mono">{item.quantity}</span>
+                            <span className="w-8 text-center text-xs font-bold font-mono" aria-live="polite">{item.quantity}</span>
                             <button 
                               onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              aria-label={`Increase quantity of ${item.name}`}
                               className="p-1.5 hover:bg-white/10 transition-colors"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3 h-3" aria-hidden="true" />
                             </button>
                           </div>
                           <p className="font-bold text-primary text-sm md:text-base tracking-tighter">${(item.price * item.quantity).toLocaleString()}</p>
@@ -451,16 +464,18 @@ export default function Home() {
                     )}>
                       <Button 
                         onClick={() => handleAddToCart(product)}
+                        aria-label={`Add ${product.name} to bag`}
                         className="flex-1 min-w-[140px] bg-primary hover:bg-white hover:text-primary text-white rounded-none h-12 md:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
-                        <ShoppingBag className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Add To Bag</span>
+                        <ShoppingBag className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" /> <span className="truncate">Add To Bag</span>
                       </Button>
                       
                       <Button 
                         onClick={() => startCall({ name: product.name, materials: product.materials })}
+                        aria-label={`Start voice call about ${product.name}`}
                         className="flex-1 min-w-[140px] bg-green-600/20 border border-green-500/50 hover:bg-green-500 text-green-400 hover:text-white rounded-none h-12 md:h-16 text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-widest transition-all duration-500 box-border overflow-hidden"
                       >
-                        <Phone className="mr-2 h-4 w-4 shrink-0" /> <span className="truncate">Voice Stylist</span>
+                        <Phone className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" /> <span className="truncate">Voice Stylist</span>
                       </Button>
                     </div>
                   </div>
@@ -485,11 +500,13 @@ export default function Home() {
       ))}
 
       {/* Side Nav Dots - Enhanced Clarity */}
-      <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5">
+      <div className="fixed right-6 lg:right-12 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-8 z-40 p-4 rounded-full bg-black/5 backdrop-blur-[2px] border border-white/5" role="navigation" aria-label="Category navigation">
         {groupedProducts.map((group, i) => (
           <button
             key={i}
             onClick={() => document.querySelectorAll('section[data-category-index]')[i].scrollIntoView({ behavior: 'smooth' })}
+            aria-label={`Go to ${group.name} category`}
+            aria-current={activeCategoryIndex === i ? 'true' : undefined}
             className="group relative flex items-center justify-end"
           >
             <div className="absolute right-10 flex flex-col items-end opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none translate-x-4 group-hover:translate-x-0">
@@ -513,15 +530,16 @@ export default function Home() {
       <div className="fixed bottom-6 right-6 md:bottom-12 md:right-12 z-50">
         <Button 
           onClick={openChat}
+          aria-label="Open AI Stylist chat"
           className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-primary hover:bg-white hover:text-primary text-white shadow-2xl transition-all duration-500 flex items-center justify-center group"
         >
-          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
-          <MessageCircle className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-110 transition-transform" />
+          <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" aria-hidden="true" />
+          <MessageCircle className="w-6 h-6 md:w-8 md:h-8 group-hover:scale-110 transition-transform" aria-hidden="true" />
         </Button>
       </div>
 
       {/* Unified Help Overlay */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/40 z-40 pointer-events-none px-6 backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/20 box-border">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-8 text-white/60 z-40 pointer-events-none px-6 backdrop-blur-sm py-2 rounded-full border border-white/5 bg-black/20 box-border" aria-hidden="true">
         <div className="flex items-center gap-2">
           <ChevronLeft className="w-3 h-3 text-primary animate-pulse" />
           <span className="text-[7px] md:text-[9px] uppercase tracking-[0.2em] font-bold text-white">Swipe Designs</span>

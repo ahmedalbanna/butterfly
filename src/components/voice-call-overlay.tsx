@@ -32,7 +32,7 @@ export function VoiceCallOverlay() {
 
   if (!isCalling) return null;
 
-  // وضع التصغير (الفقاعة العائمة) - تم تحديث الموقع لتجنب التداخل مع المحادثة
+  // Minimized bubble — positioned to avoid chat overlap
   if (isMinimized) {
     return (
       <div className="fixed bottom-6 right-24 md:bottom-12 md:right-32 z-[100] animate-in slide-in-from-bottom-10 duration-500">
@@ -40,16 +40,18 @@ export function VoiceCallOverlay() {
           <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping opacity-50" />
           <button 
             onClick={() => setIsMinimized(false)}
+            aria-label="Expand call"
             className="relative w-16 h-16 rounded-full bg-black border-2 border-primary/50 flex items-center justify-center shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:scale-110 transition-transform duration-300"
           >
-            <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+            <Sparkles className="w-6 h-6 text-primary animate-pulse" aria-hidden="true" />
           </button>
           
           <button 
             onClick={endCall}
+            aria-label="End call"
             className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-lg"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3 h-3" aria-hidden="true" />
           </button>
         </div>
 
@@ -80,15 +82,15 @@ export function VoiceCallOverlay() {
         }
       `}</style>
 
-      {/* زر التصغير في الأعلى */}
       <div className="absolute top-8 right-8 flex gap-4">
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => setIsMinimized(true)}
-          className="text-white/40 hover:text-white hover:bg-white/10 rounded-full"
+          aria-label="Minimize call"
+          className="text-white/60 hover:text-white hover:bg-white/10 rounded-full"
         >
-          <Minimize2 className="w-6 h-6" />
+          <Minimize2 className="w-6 h-6" aria-hidden="true" />
         </Button>
       </div>
 
@@ -112,25 +114,27 @@ export function VoiceCallOverlay() {
           onClick={() => setIsMuted(!isMuted)}
           variant="outline" 
           size="icon" 
+          aria-label={isMuted ? "Unmute" : "Mute"}
           className={cn(
             "w-14 h-14 md:w-20 md:h-20 rounded-full border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all",
             isMuted && "bg-primary/20 border-primary/40"
           )}
         >
-          {isMuted ? <VolumeX className="w-6 h-6 md:w-8 md:h-8 text-primary" /> : <Volume2 className="w-6 h-6 md:w-8 md:h-8" />}
+          {isMuted ? <VolumeX className="w-6 h-6 md:w-8 md:h-8 text-primary" aria-hidden="true" /> : <Volume2 className="w-6 h-6 md:w-8 md:h-8" aria-hidden="true" />}
         </Button>
         
         <Button 
           onClick={endCall}
           variant="destructive" 
           size="icon" 
+          aria-label="End call"
           className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-red-500 hover:bg-red-600 shadow-[0_0_40px_rgba(239,68,68,0.4)] transition-transform hover:scale-105"
         >
-          <Phone className="w-8 h-8 md:w-12 md:h-12 rotate-[135deg]" />
+          <Phone className="w-8 h-8 md:w-12 md:h-12 rotate-[135deg]" aria-hidden="true" />
         </Button>
       </div>
 
-      <p className="absolute bottom-12 text-white/20 uppercase tracking-[0.5em] text-[8px] font-bold">
+      <p className="absolute bottom-12 text-white/40 uppercase tracking-[0.5em] text-[8px] font-bold" aria-hidden="true">
         Secure Encrypted Line
       </p>
 
