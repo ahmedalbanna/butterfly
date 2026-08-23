@@ -6,7 +6,7 @@
  * - aiStylistChat - Handles the conversation logic with a sophisticated persona.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, assertGenkitConfigured } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ChatMessageSchema = z.object({
@@ -22,6 +22,7 @@ const AIStylistChatInputSchema = z.object({
 export type AIStylistChatInput = z.infer<typeof AIStylistChatInputSchema>;
 
 export async function aiStylistChat(input: AIStylistChatInput): Promise<string> {
+  assertGenkitConfigured();
   const history = input.history?.map(msg => ({
     role: msg.role,
     content: [{ text: msg.content }]

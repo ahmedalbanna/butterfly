@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 type VoiceCallContextType = {
@@ -24,17 +24,31 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const { toast } = useToast();
+  const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (connectTimeoutRef.current) {
+        clearTimeout(connectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const startCall = async (product: { name: string; materials: string }) => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
     setIsCalling(true);
     setIsCallConnecting(true);
     setIsMinimized(false);
     setAudioUrl(null);
 
-    // محاكاة وقت الاتصال قبل تشغيل التسجيل الثابت
-    setTimeout(() => {
+    // Simulated connection time before playing static recording (demo)
+    connectTimeoutRef.current = setTimeout(() => {
       setAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); 
       setIsCallConnecting(false);
+      connectTimeoutRef.current = null;
       
       toast({
         title: "Connected to Stylist",
@@ -44,6 +58,10 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   };
 
   const endCall = () => {
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
+    }
     setIsCalling(false);
     setIsCallConnecting(false);
     setIsMinimized(false);

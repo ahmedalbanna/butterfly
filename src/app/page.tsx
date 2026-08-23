@@ -2,7 +2,7 @@
 "use client"
 
 import Image from 'next/image';
-import { PRODUCTS, CATEGORIES } from '@/lib/products';
+import { PRODUCTS, CATEGORIES, type Product } from '@/lib/products';
 import { ShoppingBag, Sparkles, MessageCircle, ChevronLeft, ChevronRight, Trash2, Plus, Minus, ArrowRight, ShieldCheck, ChevronDown, MousePointer2, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useMemo, useRef } from 'react';
@@ -38,21 +38,24 @@ const TypewriterEffect = ({ text, delay = 0, speed = 30, active = false }: { tex
 
     let current = '';
     let index = 0;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
     const initialTimeout = setTimeout(() => {
-      const interval = setInterval(() => {
+      interval = setInterval(() => {
         if (index < text.length) {
           current += text[index];
           setDisplayText(current);
           index++;
-        } else {
+        } else if (interval) {
           clearInterval(interval);
+          interval = null;
         }
       }, speed);
-      return () => clearInterval(interval);
     }, delay);
 
     return () => {
       clearTimeout(initialTimeout);
+      if (interval) clearInterval(interval);
       setDisplayText('');
     };
   }, [text, active, delay, speed]);
@@ -90,16 +93,12 @@ export default function Home() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const index = Number(entry.target.getAttribute('data-category-index'));
-            setActiveCategoryIndex(index);
+            if (!Number.isNaN(index)) setActiveCategoryIndex(index);
           }
         });
       },
       { threshold: 0.6 }
     );
-
-    document.querySelectorAll('section[data-category-index]').forEach((section) => {
-      categoryObserver.observe(section);
-    });
 
     const productObserver = new IntersectionObserver(
       (entries) => {
@@ -107,6 +106,7 @@ export default function Home() {
           if (entry.isIntersecting) {
             const catIndex = Number(entry.target.getAttribute('data-parent-category-index'));
             const prodIndex = Number(entry.target.getAttribute('data-product-index'));
+            if (Number.isNaN(catIndex) || Number.isNaN(prodIndex)) return;
             setActiveProductIndices(prev => ({
               ...prev,
               [catIndex]: prodIndex
@@ -117,17 +117,24 @@ export default function Home() {
       { threshold: 0.6 }
     );
 
-    document.querySelectorAll('div[data-product-index]').forEach((div) => {
-      productObserver.observe(div);
+    // Defer observation to next frame so DOM is painted
+    const raf = requestAnimationFrame(() => {
+      document.querySelectorAll('section[data-category-index]').forEach((section) => {
+        categoryObserver.observe(section);
+      });
+      document.querySelectorAll('div[data-product-index]').forEach((div) => {
+        productObserver.observe(div);
+      });
     });
 
     return () => {
+      cancelAnimationFrame(raf);
       categoryObserver.disconnect();
       productObserver.disconnect();
     };
   }, [groupedProducts]);
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Pick<Product, 'id' | 'name' | 'price' | 'image'>) => {
     addToCart({
       id: product.id,
       name: product.name,

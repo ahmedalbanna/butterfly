@@ -8,7 +8,7 @@
  * - ProductVoiceInquiryOutput - The return type containing the audio data URI.
  */
 
-import { ai } from '@/ai/genkit';
+import { ai, assertGenkitConfigured } from '@/ai/genkit';
 import { z } from 'genkit';
 import { googleAI } from '@genkit-ai/google-genai';
 import wav from 'wav';
@@ -37,6 +37,7 @@ const productVoiceInquiryFlow = ai.defineFlow(
     outputSchema: ProductVoiceInquiryOutputSchema,
   },
   async (input) => {
+    assertGenkitConfigured();
     const promptText = `Speaker1: Hello! Thank you for inquiring about our ${input.productName}. This exquisite piece is meticulously crafted from ${input.productMaterials}. It represents the pinnacle of luxury and sophistication in our collection. How may I assist you further with this selection?`;
 
     const { media } = await ai.generate({
@@ -82,7 +83,7 @@ async function toWav(
       bitDepth: sampleWidth * 8,
     });
 
-    let bufs: any[] = [];
+    let bufs: Buffer[] = [];
     writer.on('error', reject);
     writer.on('data', function (d) {
       bufs.push(d);

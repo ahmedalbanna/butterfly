@@ -2,14 +2,21 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { z } from 'zod';
 
-export type CartItem = {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-};
+export const CartItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  price: z.number().nonnegative(),
+  image: z.string(),
+  quantity: z.number().int().min(1),
+});
+
+export type CartItem = z.infer<typeof CartItemSchema>;
+
+const CartArraySchema = z.array(CartItemSchema);
+
+const STORAGE_KEY = 'luxefinds_cart';
 
 type CartContextType = {
   cart: CartItem[];
@@ -19,23 +26,58 @@ type CartContextType = {
   clearCart: () => void;
   cartTotal: number;
   cartCount: number;
+  isHydrated: boolean;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function safeParseCart(value: string | null): CartItem[] | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value);
+    const result = CartArraySchema.safeParse(parsed);
+    if (!result.success) {
+      console.warn('Invalid cart data in localStorage, resetting', result.error.flatten());
+      return null;
+    }
+    return result.data;
+  } catch (e) {
+    console.warn('Failed to parse cart from localStorage', e);
+    return null;
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('luxefinds_cart');
+    const savedCart = safeParseCart(localStorage.getItem(STORAGE_KEY));
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      setCart(savedCart);
     }
+    setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('luxefinds_cart', JSON.stringify(cart));
-  }, [cart]);
+    if (!isHydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+    } catch (e) {
+      console.error('Failed to persist cart', e);
+    }
+  }, [cart, isHydrated]);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key !== STORAGE_KEY) return;
+      const next = safeParseCart(e.newValue);
+      if (next) setCart(next);
+      else if (e.newValue === null) setCart([]);
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setCart(prev => {
@@ -62,7 +104,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal, cartCount, isHydrated }}>
       {children}
     </CartContext.Provider>
   );
