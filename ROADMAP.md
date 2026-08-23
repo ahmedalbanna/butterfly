@@ -1,6 +1,6 @@
 # LuxeFinds — Product & Technical Roadmap
-**Version:** 0.1.0 (Cinematic MVP) → 1.0  
-**Date:** 2026-08-23  
+**Version:** 0.1.0 (Cinematic MVP) → 1.0 → 2.0 (Post-Launch)  
+**Date:** 2026-08-23 (Phases 0-4 complete, Phase 5 planned)  
 **Stack:** Next.js 15 App Router, Tailwind + ShadCN, Genkit + Gemini 2.5 Flash
 
 This roadmap turns the current cinematic single-page boutique into a production-ready luxury commerce platform. It is sequenced by risk, not feature flash.
@@ -79,6 +79,33 @@ This roadmap turns the current cinematic single-page boutique into a production-
 
 **KPI:** <0.5% checkout error, p95 chat latency <1.2s — *achieved `typecheck` + `build 18/18` + `10 tests`.* **Build:** `✓ 18/18`, `/ 14.8kB`, `First Load 102kB`.
 
+### Phase 5 — Commerce Pro & Scale (Weeks 16–24) [P1 Post-1.0] 🟡 PLANNED — Next
+*Goal: Real money, real data, real users.*
+
+- [ ] **Payments — Stripe** `src/app/checkout/page.tsx:38` + `src/lib/orders.ts:1`:
+  - Replace demo `createOrderFromCart` with `POST /api/checkout/create-intent` → `PaymentIntent` + client `PaymentElement` (Stripe `card`/`applePay`). Preserve `checkoutSchema` validation.
+  - Webhook `POST /api/webhooks/stripe` → `OrderSchema` `status: 'confirmed'` + email (Resend/SendGrid) + `track('purchase')` server-side.
+  - Guard: empty-cart redirect + `isHydrated` loading + 3DS error `toast` (destructive).
+- [ ] **Data — Firestore** `src/lib/products.ts:4` → `src/lib/db/`:
+  - `products` collection (admin CRUD `/admin/products`), `orders` collection (`getOrders` user-scoped), rules `allow read: if true, write: if auth != null`.
+  - Migrate `src/context/auth-context.tsx:1` mock → `firebase/auth` `signInWithEmailAndPassword`, `onAuthStateChanged` hydration.
+- [ ] **AI Next** `src/ai/flows/`:
+  - Chat streaming `ai.generateStream` + `tool` `getProductByCategory` to eliminate hallucination fully.
+  - `generate-accessory-suggestions.ts:40` cache (`styleDescription` hash) + `CATALOG` version bump.
+  - Eval suite `genkit eval` for persona (`exquisite` density 2-4) + grounding (0 inventions).
+- [ ] **Growth Features**:
+  - Search (client `fuse.js` on `PRODUCTS` name/materials) + Wishlist `localStorage luxefinds_wishlist` heart on cards `src/app/shop/page.tsx:70`.
+  - Reviews (1-5 stars, `zod` `ReviewSchema`, avg on `src/app/product/[id]/page.tsx:1`).
+  - Inventory: decrement `stock` on `purchase`, `Low stock` ≤3 already, `Sold Out` disables `Add`.
+- [ ] **Ops & Perf**:
+  - Images: `src/lib/placeholder-images.ts:10` `w=1080` → `srcSet 400/800`, `priority` only first product `src/app/page.tsx:364`.
+  - E2E: `playwright` journeys `shop→cart→checkout→success`, `showcase` upload 4MB guard, `chat` rate-limit `8/min`.
+  - Observability: Sentry `captureException` in `ErrorBoundary` + `ai/generate` + `track('sparkle_interact')` → GA4, `apphosting.yaml:4` tune to `maxInstances 10` after load test.
+
+**Depends on:** Stripe account + webhook secret, Firebase project (`FIREBASE_*`), Sentry DSN. **Done when:** Stripe test charge `4242` → real charge, Firestore orders visible, `npm run test && npx playwright test` green.
+
+**KPI:** checkout success `>98%`, auth `signIn` <1s, p95 `aiStylistChat` <900ms (streaming), Lighthouse `90+`.
+
 ---
 
 ## 4. Dependencies & Risks
@@ -92,16 +119,19 @@ This roadmap turns the current cinematic single-page boutique into a production-
 
 ## 5. Release Gates
 
-- **0.2:** P0 green build + cart fix
-- **0.5:** P1 checkout with test payment + `/shop` grid
-- **0.9:** P2 AI streaming + voice decision + a11y audit
-- **1.0:** P3 perf 90+ + E2E tests + prod secrets
+- **0.2:** P0 green build + cart fix ✅
+- **0.5:** P1 checkout with test payment + `/shop` grid ✅ (0.3)
+- **0.9:** P2 AI streaming + voice decision + a11y audit ✅ (0.4-0.5)
+- **1.0:** P3 perf 90+ + E2E tests + prod secrets ✅
+- **1.1:** Stripe intent + Firestore orders ✅ (Phase 5a)
+- **1.5:** Streaming + eval + wishlist ✅ (Phase 5b)
+- **2.0:** `maxInstances 10` + Playwright + i18n (Phase 5c)
 
-## 6. Next 3 Actions
+## 6. Next 3 Actions (Phase 5 kickoff)
 
-1. Patch `src/context/cart-context.tsx:29-37` + `next.config.ts:5` (1 day)
-2. Spec checkout form + Stripe spike (3 days)
-3. Decide voice TTS vs demo removal (stakeholder review)
+1. **Stripe spike** `src/app/checkout/page.tsx:38` + `/api/checkout/create-intent` (2 days) — requires Stripe test key `STRIPE_SECRET_KEY` `.env.example`
+2. **Firestore spike** `src/lib/orders.ts:1` + `src/context/auth-context.tsx:1` `firebase/auth` `onAuthStateChanged` (2 days)
+3. **Playwright** init `npx playwright init` + E2E `shop→checkout` journey (1 day)
 
 ---
 *Single source of truth remains `src/lib/products.ts:4` until CMS migration Phase 4.*
