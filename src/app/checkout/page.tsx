@@ -14,6 +14,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { saveOrder, createOrderFromCart } from '@/lib/orders';
+import { track } from '@/lib/analytics';
 
 const checkoutSchema = z.object({
   email: z.string().email('Valid email required'),
@@ -61,12 +63,14 @@ export default function CheckoutPage() {
       toast({ title: "Bag empty", description: "Add pieces before checkout.", variant: "destructive" });
       return;
     }
-    const id = `LX-${Date.now().toString(36).toUpperCase()}`;
-    setOrderId(id);
+    const order = createOrderFromCart({ email: values.email, items: cart, subtotal: cartTotal });
+    saveOrder(order);
+    track('purchase', { total: order.total, count: cart.length, orderId: order.id });
+    setOrderId(order.id);
     setIsSuccess(true);
     toast({
       title: "Order confirmed",
-      description: `Order ${id} confirmed. Confirmation sent to ${values.email}.`,
+      description: `Order ${order.id} confirmed. Confirmation sent to ${values.email}.`,
     });
     clearCart();
   };

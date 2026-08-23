@@ -11,6 +11,7 @@ import { useCart } from '@/context/cart-context';
 import { useVoiceCall } from '@/context/voice-call-context';
 import { useChat } from '@/context/chat-context';
 import { useToast } from '@/hooks/use-toast';
+import { track } from '@/lib/analytics';
 import {
   Sheet,
   SheetContent,
@@ -141,6 +142,7 @@ export default function Home() {
       price: product.price,
       image: product.image
     });
+    track('add_to_bag', { productId: product.id, price: product.price });
     toast({
       title: "Added to Bag",
       description: `${product.name} has been added to your shopping bag.`,
@@ -161,6 +163,7 @@ export default function Home() {
 
     const newSparkle = { id: Date.now(), x, y };
     setSparkles(prev => [...prev, newSparkle]);
+    track('sparkle_interact', { productId });
     
     setIsZoomed(prev => ({ ...prev, [productId]: !prev[productId] }));
 

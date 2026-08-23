@@ -2,19 +2,8 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { z } from 'zod';
-
-export const CartItemSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  price: z.number().nonnegative(),
-  image: z.string(),
-  quantity: z.number().int().min(1),
-});
-
-export type CartItem = z.infer<typeof CartItemSchema>;
-
-const CartArraySchema = z.array(CartItemSchema);
+import { CartItemSchema, CartArraySchema, type CartItem } from '@/lib/cart-schema';
+export { CartItemSchema, type CartItem } from '@/lib/cart-schema';
 
 const STORAGE_KEY = 'luxefinds_cart';
 

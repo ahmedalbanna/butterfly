@@ -4,9 +4,13 @@ import './globals.css';
 import {CartProvider} from '@/context/cart-context';
 import {VoiceCallProvider} from '@/context/voice-call-context';
 import {ChatProvider} from '@/context/chat-context';
+import {AuthProvider} from '@/context/auth-context';
 import {Toaster} from '@/components/ui/toaster';
 import {VoiceCallOverlay} from '@/components/voice-call-overlay';
 import {ChatOverlay} from '@/components/chat-overlay';
+import {ErrorBoundary} from '@/components/error-boundary';
+import {ConsentBanner} from '@/components/consent-banner';
+import {OrganizationJsonLd} from '@/components/json-ld';
 
 const alegreya = Alegreya({
   subsets: ['latin'],
@@ -45,16 +49,22 @@ export default function RootLayout({
   return (
     <html lang="en" className={alegreya.variable}>
       <body className="font-body antialiased min-h-screen bg-background text-foreground">
-        <ChatProvider>
-          <VoiceCallProvider>
-            <CartProvider>
-              {children}
-              <VoiceCallOverlay />
-              <ChatOverlay />
-              <Toaster />
-            </CartProvider>
-          </VoiceCallProvider>
-        </ChatProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <ChatProvider>
+              <VoiceCallProvider>
+                <CartProvider>
+                  {children}
+                  <VoiceCallOverlay />
+                  <ChatOverlay />
+                  <Toaster />
+                  <ConsentBanner />
+                  <OrganizationJsonLd />
+                </CartProvider>
+              </VoiceCallProvider>
+            </ChatProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
