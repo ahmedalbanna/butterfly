@@ -2,13 +2,13 @@
 
 import { useChat } from '@/context/chat-context';
 import { Button } from '@/components/ui/button';
-import { Sparkles, X, Send, User, Bot, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, User, Bot, Loader2, Trash2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function ChatOverlay() {
-  const { messages, isChatOpen, isTyping, closeChat, sendMessage } = useChat();
+  const { messages, isChatOpen, isTyping, closeChat, sendMessage, clearChat } = useChat();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -39,17 +39,30 @@ export function ChatOverlay() {
             </div>
             <div>
               <h2 className="text-xl md:text-2xl font-headline italic text-white">Luxe Stylist</h2>
-              <p className="text-primary font-bold uppercase tracking-[0.2em] text-[8px] md:text-[10px]">Expert Fashion Consultation</p>
+              <p className="text-primary font-bold uppercase tracking-[0.2em] text-[8px] md:text-[10px]">Expert Fashion Consultation — Catalog-grounded</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={closeChat}
-            className="text-white/40 hover:text-white hover:bg-white/10 rounded-full"
-          >
-            <X className="w-6 h-6" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={clearChat}
+              title="Clear conversation"
+              aria-label="Clear conversation"
+              className="text-white/30 hover:text-white hover:bg-white/10 rounded-full"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={closeChat}
+              aria-label="Close chat"
+              className="text-white/40 hover:text-white hover:bg-white/10 rounded-full"
+            >
+              <X className="w-6 h-6" />
+            </Button>
+          </div>
         </header>
 
         {/* Chat Body */}
@@ -103,23 +116,28 @@ export function ChatOverlay() {
         {/* Footer Input */}
         <div className="p-6 md:p-12 bg-black/40 border-t border-white/10">
           <div className="max-w-3xl mx-auto relative group">
+            <label htmlFor="stylist-input" className="sr-only">Message the stylist</label>
             <input 
+              id="stylist-input"
               type="text" 
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Inquire about an exquisite piece..."
+              aria-label="Message the Luxe Stylist"
               className="w-full bg-white/[0.03] border border-white/10 rounded-full h-14 md:h-16 px-8 pr-16 text-white text-sm md:text-base placeholder:text-white/20 focus:outline-none focus:border-primary/50 transition-all group-hover:bg-white/[0.05]"
             />
             <Button 
               onClick={handleSend}
               disabled={!input.trim() || isTyping}
               size="icon"
+              aria-label="Send message"
               className="absolute right-2 top-2 h-10 w-10 md:h-12 md:w-12 bg-primary hover:bg-white hover:text-primary rounded-full transition-all"
             >
               <Send className="w-4 h-4 md:w-5 md:h-5" />
             </Button>
           </div>
+          <p className="text-center text-[10px] uppercase tracking-widest text-white/20 mt-3">8 messages per minute • catalog-grounded • demo requires GEMINI_API_KEY</p>
         </div>
 
       </div>

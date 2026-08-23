@@ -14,6 +14,7 @@ export function VoiceCallOverlay() {
     isMinimized, 
     audioUrl, 
     isMuted, 
+    isDemo,
     setIsMuted, 
     setIsMinimized,
     endCall 
@@ -101,8 +102,9 @@ export function VoiceCallOverlay() {
       <div className="text-center space-y-4 mb-20 px-6 max-w-md">
         <h3 className="text-2xl md:text-4xl font-headline italic text-white">Luxe Stylist</h3>
         <p className="text-primary font-bold uppercase tracking-[0.3em] text-[10px] md:text-xs">
-          {isCallConnecting ? "Establishing Secure Line..." : "On Call - Live Consultation"}
+          {isCallConnecting ? "Establishing Secure Line..." : isDemo ? "On Call — Demo Audio" : "On Call - Live Consultation"}
         </p>
+        {isDemo && !isCallConnecting && <p className="text-white/40 text-[10px] uppercase tracking-widest">Demo mode — real stylist voice requires configuration</p>}
       </div>
 
       <div className="flex items-center gap-8 md:gap-12">

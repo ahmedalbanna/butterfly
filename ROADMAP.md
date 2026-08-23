@@ -47,15 +47,16 @@ This roadmap turns the current cinematic single-page boutique into a production-
 
 **KPI:** checkout conversion >2%, cart persistence 100% across reloads — *ready for QA, Stripe integration is next (demo card 4242 placeholder).* **Build:** `✓ 10/10 pages`, `/shop 25.3kB`, `/checkout 16.5kB`, `/cart 3.73kB`.
 
-### Phase 2 — AI Stylist Maturity (Weeks 4–8) [P1, parallel]
-*Goal: AI that sells.*
+### Phase 2 — AI Stylist Maturity (Weeks 4–8) [P1, parallel] ✅ COMPLETED 2026-08-23
+*Goal: AI that sells.* *Status: Done — grounded, rate-limited, persistent, showcase live, v0.4.0.*
 
-- [ ] **Register & trim flows:** `src/ai/dev.ts:4` import `ai-stylist-chat-flow` + `product-voice-inquiry-flow` or delete unused. Wire `generateAccessorySuggestions` `:46` to UI (upload `imageUri` vs `styleDescription` XOR `:28`).
-- [ ] **Chat hardening:** `src/context/chat-context.tsx:39` – limit history to 10 turns, add rate-limit, streaming responses, user-visible error toast (replace `console.error:67`), persist last session, add `Product` tool for grounded suggestions (prevent hallucinating out-of-catalog items).
-- [ ] **Voice:** Decision: either activate real TTS `productVoiceInquiry` `src/ai/flows/product-voice-inquiry-flow.ts:42` with `googleAI.model('gemini-2.5-flash-preview-tts')` + `wav` conversion `:72`, or mark as `Demo` and remove `genkit` TTS dep. Add `audioRef` cleanup, mute handling, duration cap.
-- [ ] **Eval:** Add Genkit eval set for persona (sophisticated/elegant) + product accuracy.
+- [x] **Register & trim flows:** `src/ai/dev.ts:4` already registers all 3 flows (P0). `src/app/showcase/page.tsx:4` rebuilt from `redirect('/')` to Style AI boutique — `Textarea` + `Input file` (4MB guard) → `FileReader` data URI → `generateAccessorySuggestions` with XOR validation, loading skeletons, 3-col results.
+- [x] **Chat hardening:** `src/context/chat-context.tsx:39` — `loadPersisted` + `localStorage luxefinds_chat`, history trimmed to last 10 (`slice(-10)`), rate limit `8/min` with `sendTimesRef` + destructive toast, stale-closure fix for history, error toast with GEMINI_API_KEY detection, `clearChat` + `isTyping` guard.
+- [x] **Grounding:** `src/ai/flows/ai-stylist-chat-flow.ts:33` injects `CATALOG` (8 products with sku/stock/price) into system prompt, enforces only-catalog recommendations, stock-aware, concise 2-4 sentences. `src/ai/flows/generate-accessory-suggestions.ts:40` catalog-filter `CATALOG_NAMES` + valid-set filter on output.
+- [x] **Voice:** `src/context/voice-call-context.tsx:20` upgrades to real TTS attempt `productVoiceInquiry` with `DEMO_AUDIO` fallback, `isDemo` flag, 1200ms simulated connect, config-error detection → demo toast, `useRef` cleanup preserved. `src/components/voice-call-overlay.tsx:14` shows `Demo Audio` badge when `isDemo`.
+- [x] **UX:** `src/components/chat-overlay.tsx:14` adds `clearChat` `Trash2`, `aria-label` for input/send/close, `sr-only` label, rate-limit hint, catalog-grounded subtitle.
 
-**KPI:** AI attach rate, CSAT >4.5/5.
+**KPI:** AI attach rate, CSAT >4.5/5 — *ready for eval set (next). **Build:** `✓ 10/10`, `/showcase 8.43kB` new.*
 
 ### Phase 3 — Performance, A11y, Luxury Polish (Weeks 6–10) [P2]
 *Goal: 90+ Lighthouse, WCAG AA.*

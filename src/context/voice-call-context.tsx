@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { productVoiceInquiry } from '@/ai/flows/product-voice-inquiry-flow';
 
 type VoiceCallContextType = {
   isCalling: boolean;
@@ -9,6 +10,7 @@ type VoiceCallContextType = {
   isMinimized: boolean;
   audioUrl: string | null;
   isMuted: boolean;
+  isDemo: boolean;
   setIsMuted: (muted: boolean) => void;
   setIsMinimized: (minimized: boolean) => void;
   startCall: (product: { name: string; materials: string }) => Promise<void>;
@@ -17,12 +19,15 @@ type VoiceCallContextType = {
 
 const VoiceCallContext = createContext<VoiceCallContextType | undefined>(undefined);
 
+const DEMO_AUDIO = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
 export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
   const [isCalling, setIsCalling] = useState(false);
   const [isCallConnecting, setIsCallConnecting] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const { toast } = useToast();
   const connectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,18 +48,46 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     setIsCallConnecting(true);
     setIsMinimized(false);
     setAudioUrl(null);
+    setIsDemo(false);
 
-    // Simulated connection time before playing static recording (demo)
-    connectTimeoutRef.current = setTimeout(() => {
-      setAudioUrl('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); 
+    const fallbackToDemo = (reason?: string) => {
+      setAudioUrl(DEMO_AUDIO);
+      setIsDemo(true);
       setIsCallConnecting(false);
-      connectTimeoutRef.current = null;
-      
       toast({
-        title: "Connected to Stylist",
-        description: `You are now listening to information about ${product.name}.`,
+        title: reason ? "Demo mode" : "Connected to Stylist (Demo)",
+        description: reason || `You are now listening to information about ${product.name}.`,
       });
-    }, 2000);
+    };
+
+    // Try real TTS, fallback to demo on any failure (missing key, quota, network)
+    connectTimeoutRef.current = setTimeout(async () => {
+      try {
+        const result = await productVoiceInquiry({ productName: product.name, productMaterials: product.materials });
+        if (result?.audioUri) {
+          setAudioUrl(result.audioUri);
+          setIsDemo(false);
+          setIsCallConnecting(false);
+          toast({
+            title: "Connected to Stylist",
+            description: `You are now listening to information about ${product.name}.`,
+          });
+        } else {
+          fallbackToDemo();
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        const isConfig = msg.includes('GEMINI_API_KEY') || msg.includes('not configured');
+        if (isConfig) {
+          fallbackToDemo("AI voice not configured – playing demo audio.");
+        } else {
+          console.warn("TTS failed, using demo", e);
+          fallbackToDemo();
+        }
+      } finally {
+        connectTimeoutRef.current = null;
+      }
+    }, 1200);
   };
 
   const endCall = () => {
@@ -66,6 +99,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
     setIsCallConnecting(false);
     setIsMinimized(false);
     setAudioUrl(null);
+    setIsDemo(false);
   };
 
   return (
@@ -75,6 +109,7 @@ export function VoiceCallProvider({ children }: { children: React.ReactNode }) {
       isMinimized,
       audioUrl, 
       isMuted, 
+      isDemo,
       setIsMuted, 
       setIsMinimized,
       startCall, 

@@ -8,6 +8,7 @@
 
 import { ai, assertGenkitConfigured } from '@/ai/genkit';
 import { z } from 'genkit';
+import { PRODUCTS } from '@/lib/products';
 
 const ChatMessageSchema = z.object({
   role: z.enum(['user', 'model']),
@@ -21,21 +22,33 @@ const AIStylistChatInputSchema = z.object({
 
 export type AIStylistChatInput = z.infer<typeof AIStylistChatInputSchema>;
 
+const CATALOG = PRODUCTS.map(p => `- ${p.name} (${p.category}) — $${p.price}: ${p.materials}. ${p.description} [SKU ${p.sku}] Stock:${p.stock}`).join('\n');
+
 export async function aiStylistChat(input: AIStylistChatInput): Promise<string> {
   assertGenkitConfigured();
-  const history = input.history?.map(msg => ({
+  // Keep only last 10 turns to bound cost
+  const trimmedHistory = (input.history ?? []).slice(-10);
+  const history = trimmedHistory.map(msg => ({
     role: msg.role,
     content: [{ text: msg.content }]
-  })) || [];
+  }));
 
   const { text } = await ai.generate({
     model: 'googleai/gemini-2.5-flash',
-    system: `You are "The Luxe Stylist", an elite personal shopper and fashion consultant for LuxeFinds, a high-end luxury accessory boutique. 
-    Your tone is sophisticated, elegant, and highly professional. Use words like "exquisite", "meticulous", "timeless", and "curated". 
-    Provide expert advice on jewelry, watches, and bags. Keep responses concise but impactful.`,
+    system: `You are "The Luxe Stylist", an elite personal shopper for LuxeFinds.
+
+Rules:
+- Tone: sophisticated, elegant, highly professional. Use words like "exquisite", "meticulous", "timeless", "curated" sparingly.
+- Grounding: ONLY recommend products from this catalog. Never invent products, prices, or availability.
+- If asked about availability, use stock counts. Suggest alternatives if out of stock.
+- Keep responses concise (2-4 sentences) but impactful. Offer to add context-aware suggestions.
+- If unsure, ask clarifying question about style/occasion/budget.
+
+Catalog:
+${CATALOG}`,
     messages: history,
     prompt: input.message,
   });
 
-  return text || "Forgive me, I was momentary lost in the beauty of our collection. How may I assist you further?";
+  return text || "Forgive me, I was momentarily lost in the beauty of our collection. How may I assist you further?";
 }

@@ -11,8 +11,9 @@
  *   providing a list of suggested accessories.
  */
 
-import {ai} from '@/ai/genkit';
+import {ai, assertGenkitConfigured} from '@/ai/genkit';
 import {z} from 'genkit';
+import { PRODUCTS } from '@/lib/products';
 
 const GenerateAccessorySuggestionsInputSchema = z.object({
   imageUri: z
@@ -43,11 +44,15 @@ export async function generateAccessorySuggestions(
   return generateAccessorySuggestionsFlow(input);
 }
 
+const CATALOG_NAMES = PRODUCTS.map(p => `${p.name} (${p.category})`).join(', ');
+
 const prompt = ai.definePrompt({
   name: 'generateAccessorySuggestionsPrompt',
   input: {schema: GenerateAccessorySuggestionsInputSchema},
   output: {schema: GenerateAccessorySuggestionsOutputSchema},
-  prompt: `You are a personal stylist for an online accessories shop. A user has provided either an image of their outfit or a description of their style. Suggest 3-5 accessories from the shop that would complement their look.
+  prompt: `You are The Luxe Stylist for LuxeFinds. Suggest 3-5 exquisite accessories ONLY from this catalog: ${CATALOG_NAMES}.
+
+We have these exact pieces. Respond with exact product names from the catalog that complement the look.
 
   {% if imageUri %}
   Outfit Image: {{media url=imageUri}}
@@ -55,8 +60,7 @@ const prompt = ai.definePrompt({
   Style Description: {{{styleDescription}}}
   {% endif %}
   
-  Please only respond with a list of suggested accessories. For example:
-  ["necklace", "earrings", "bracelet"]
+  Return ONLY product names that exist in the catalog. Example: ["Rose Gold Diamond Necklace", "Minimalist Gold Hoop Earrings"]
   `,
 });
 
@@ -67,7 +71,12 @@ const generateAccessorySuggestionsFlow = ai.defineFlow(
     outputSchema: GenerateAccessorySuggestionsOutputSchema,
   },
   async input => {
+    assertGenkitConfigured();
     const {output} = await prompt(input);
-    return output!;
+    if (!output) throw new Error('No suggestions generated');
+    // Filter to valid catalog names only
+    const valid = new Set(PRODUCTS.map(p => p.name));
+    const filtered = output.suggestions.filter(s => valid.has(s));
+    return { suggestions: filtered.length ? filtered : output.suggestions.slice(0, 3) };
   }
 );
