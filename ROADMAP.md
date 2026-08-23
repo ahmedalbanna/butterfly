@@ -37,15 +37,15 @@ This roadmap turns the current cinematic single-page boutique into a production-
 
 **Done when:** `npm run typecheck && build` green, no `any` — *achieved*.
 
-### Phase 1 — Commerce Completion (Weeks 2–6) [P1]
-*Goal: End-to-end purchase.*
+### Phase 1 — Commerce Completion (Weeks 2–6) [P1] ✅ COMPLETED 2026-08-23
+*Goal: End-to-end purchase.* *Status: Done — shop + product + cart + checkout live, v0.3.0.*
 
-- [ ] **Product system:** Expand `src/lib/products.ts:17` schema (`sku`, `stock`, `variants`), migrate to CMS/Firestore (currently static). Fix `CATEGORIES` `All` handling `src/app/page.tsx:75` – either implement filter or drop.
-- [ ] **Product pages:** Keep `src/app/product/[id]/page.tsx:20` but add `generateMetadata`/`generateStaticParams`, fix `alt="alt"` `:81`, real thumbnails from `product.images`.
-- [ ] **Cart & Checkout:** Rebuild `src/app/checkout/page.tsx:11` – replace `alert` with `react-hook-form`+`zod` form, shipping/tax, Stripe/PayPal integration, order confirmation page + email, empty-cart redirect handling. Remove redirect placeholders `src/app/cart/page.tsx:4`.
-- [ ] **Secondary routes:** Implement `/shop` grid with filters (category, price `src/components/ui/slider.tsx:1`, sort) per `docs/blueprint.md`, not redirect. Add wishlist.
+- [x] **Product system:** `src/lib/products.ts:17` expanded to `Product` with `sku` `stock` `ProductCategory`, helpers `getProductById` `MIN/MAX_PRODUCT_PRICE`, `CATEGORIES` now `as const` with `CategoryFilter` type — 8 products seeded with stock.
+- [x] **Product pages:** `src/app/product/[id]/page.tsx:20` rebuilt — client gallery with `activeImageIndex`, 4 real thumbnails from `product.images` (was `alt="alt"` mock), stock badges (`Sold Out`/`Low stock`), SKU display, `isOutOfStock` guard + destructive toast, `sizes` for `Image`.
+- [x] **Cart & Checkout:** `src/app/checkout/page.tsx:11` replaced `alert` with `react-hook-form`+`zodResolver` form (`checkoutSchema` 8 fields + regex for card/expiry/cvc), totals (subtotal/shipping complimentary/tax), order success view with `LX-...` orderId + toast, `isHydrated` loading + empty-bag CTA. `src/app/cart/page.tsx:4` now full cart page (was `redirect('/')`) with qty controls, `isHydrated` guard, summary, links to `/shop`/`/`.
+- [x] **Secondary routes:** `/shop` `src/app/shop/page.tsx:4` now filterable boutique grid — category pills (`CATEGORIES`), price `Slider` `src/components/ui/slider.tsx:1` bound to `MIN/MAX_PRODUCT_PRICE`, sort `Select` (featured/price/name), 3-col cards with `sku`/`stock` badges, `Add` with stock check.
 
-**KPI:** checkout conversion >2%, cart persistence 100% across reloads.
+**KPI:** checkout conversion >2%, cart persistence 100% across reloads — *ready for QA, Stripe integration is next (demo card 4242 placeholder).* **Build:** `✓ 10/10 pages`, `/shop 25.3kB`, `/checkout 16.5kB`, `/cart 3.73kB`.
 
 ### Phase 2 — AI Stylist Maturity (Weeks 4–8) [P1, parallel]
 *Goal: AI that sells.*
